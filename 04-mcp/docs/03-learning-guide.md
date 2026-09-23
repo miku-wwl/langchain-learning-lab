@@ -50,3 +50,15 @@ MCP 规范负责能力的描述、发现与调用；模型的 Tool Calling 负�
 **Run**：`.\.venv\Scripts\python.exe -u src\stage_c_raw_client.py`
 
 **Observed Result / Why**：发现 `add`/`get_course_stage`，调用结果是 5；还读到 Resource 与 Prompt，协商协议版本为 `2026-07-28`。这一关把 MCP 自身故障与后续模型选择问题分开。
+
+## D — STDIO：真正跨进程
+
+**Concept**：Client 启动 Server 子进程，JSON-RPC 经 stdin/stdout 传递。普通日志只能走 stderr，否则可能破坏协议流。
+
+**Architecture**：Client PID → `stdio_client` → Server PID → MCP Tool → Client。
+
+**Minimal Code**：`src/raw_stdio_client.py` 显式提供 Python 路径、Server 路径及最小环境变量；`src/stage_d_stdio.py` 用有真实文件描述符的临时文件捕获 Server stderr。
+
+**Run**：`.\.venv\Scripts\python.exe -u src\stage_d_stdio.py`
+
+**Observed Result / Why**：Client/Server PID 不同；Tool、Resource、Prompt 均可访问；stderr 包含 `MCP_STDIO_STARTING pid=...`，JSON-RPC 调用没有被日志污染。Windows 上 `io.StringIO` 没有子进程需要的 `fileno()`，所以这里使用 `tempfile.TemporaryFile`。
