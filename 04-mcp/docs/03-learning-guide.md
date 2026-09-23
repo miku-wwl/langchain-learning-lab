@@ -26,3 +26,15 @@ MCP 规范负责能力的描述、发现与调用；模型的 Tool Calling 负�
 **Run**：`.\.venv\Scripts\python.exe -u src\stage_a_direct_tool.py`
 
 **Observed Result / Why**：返回 5。后面不论换 STDIO、HTTP 或 Agent，计算语义应保持一致；协议只改变接入方式。
+
+## B — MCP Server 的三类 primitive
+
+**Concept**：`MCPServer` 同时注册 `add`、`get_course_stage` 两个 Tool，`course://summary` Resource 和 `explain_mcp` Prompt。
+
+**Architecture**：注册函数 → MCP Server 的工具、资源、提示列表。
+
+**Minimal Code**：`src/mcp_server.py` 用 `@mcp.tool()`、`@mcp.resource()`、`@mcp.prompt()` 注册；`src/stage_b_server.py` 读取 Server 注册表和 `add` 参数 schema。
+
+**Run**：`.\.venv\Scripts\python.exe -u src\stage_b_server.py`
+
+**Observed Result / Why**：列出两个 Tool、一项 Resource、一项 Prompt；`add` schema 中 `a`/`b` 是整数。Tool 做动作，Resource 给数据，Prompt 给模板，三者不可混称 Tool。

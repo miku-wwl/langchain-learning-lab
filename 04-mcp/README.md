@@ -14,5 +14,6 @@ python -m venv .venv
 ## 已实现学习点
 
 - 01: Direct Tool baseline
+- 02: MCP Server primitives
 
 详细解释见 `docs/03-learning-guide.md`。
