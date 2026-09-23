@@ -35,6 +35,8 @@ def search_demo_guideline(query: str) -> str:
 def find_demo_doctors(specialty: str) -> str:
     """Look up fictional directory entries by specialty such as general."""
     CALLS.append(("find_demo_doctors", specialty))
+    if specialty == "simulate_failure":
+        raise RuntimeError("simulated directory tool failure")
     key = "general" if "general" in specialty.lower() else specialty.lower()
     doctors = _resource("synthetic_doctors.json").get(key)
     return json.dumps({"status": "OK", "doctors": doctors} if doctors else {"status": "NO_DATA"})

@@ -33,7 +33,9 @@ def scoped_task(kind: str, query: str) -> str:
         return f"Use get_history_records with user_id={user_id}. Summarize only fictional entries. /no_think"
     if kind == "guideline":
         return "Use search_demo_guideline with query=general. Summarize only fictional note. /no_think"
-    specialty = "general"
+    lowered = query.lower()
+    failure_requested = "simulate_failure" in lowered or ("simulat" in lowered and ("error" in lowered or "fail" in lowered))
+    specialty = "simulate_failure" if failure_requested else "general"
     return f"Use find_demo_doctors with specialty={specialty}. List only fictional entries. /no_think"
 
 

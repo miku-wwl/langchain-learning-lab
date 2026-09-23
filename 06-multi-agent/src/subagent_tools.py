@@ -38,7 +38,12 @@ def create_subagent_tools(workers: dict, events: list[dict] | None = None) -> li
     def ask_doctor_agent(task: str) -> str:
         """Delegate fictional doctor-directory lookups to the directory specialist."""
         worker_task = scoped_task("doctor", task)
-        result = invoke_worker(workers, "doctor", worker_task)
+        try:
+            result = invoke_worker(workers, "doctor", worker_task)
+        except Exception as error:
+            if events is not None:
+                events.append({"kind": "doctor", "worker_task": worker_task, "error": type(error).__name__})
+            return f"DOCTOR_AGENT_ERROR: {type(error).__name__}"
         capture("doctor", task, worker_task, result)
         return result["filtered"]
 
