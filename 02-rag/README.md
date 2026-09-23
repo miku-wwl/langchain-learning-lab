@@ -20,5 +20,7 @@ Use the locally loaded Foundry `qwen3-4b` model; no cloud key is required.
    - `python src/stage_f_retriever.py`
 7. **Two-step RAG**
    - `python src/stage_g_rag.py`
+8. **Grounding and unknown questions**
+   - `python src/stage_h_grounding.py`
 
 Run the stage script for its printed PASS marker. When tests are present, run `python -m pytest -q tests`.

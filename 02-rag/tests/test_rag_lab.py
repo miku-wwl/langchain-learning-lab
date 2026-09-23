@@ -11,6 +11,7 @@ from embedding_factory import create_local_embeddings
 from stage_d_embedding import cosine_similarity
 from stage_e_vectorstore import REFUND_QUERY
 from stage_g_rag import UNKNOWN_SENTENCE, format_docs, rag_prompt
+from stage_h_grounding import PARAPHRASE_QUERY, UNKNOWN_QUERY, says_unknown
 
 @pytest.fixture(scope="module")
 def indexed_corpus():
@@ -56,3 +57,20 @@ def test_retriever_matches_direct_search(indexed_corpus):
     retriever = store.as_retriever(search_kwargs={"k": 3})
     direct = store.similarity_search(REFUND_QUERY, k=3)
     assert [doc.page_content for doc in retriever.invoke(REFUND_QUERY)] == [doc.page_content for doc in direct]
+
+@pytest.mark.parametrize("question", [REFUND_QUERY, PARAPHRASE_QUERY])
+def test_known_and_paraphrased_queries_find_evidence(indexed_corpus, question):
+    _, _, _, store = indexed_corpus
+    documents = store.as_retriever(search_kwargs={"k": 3}).invoke(question)
+    assert any("3 to 5 business days" in doc.page_content for doc in documents)
+
+def test_unknown_grounding_contract(indexed_corpus):
+    _, _, _, store = indexed_corpus
+    documents = store.as_retriever(search_kwargs={"k": 3}).invoke(UNKNOWN_QUERY)
+    assert all("CEO" not in doc.page_content for doc in documents)
+    context = format_docs(documents)
+    messages = rag_prompt().invoke({"context": context, "question": UNKNOWN_QUERY}).messages
+    assert set(rag_prompt().input_variables) == {"context", "question"}
+    assert UNKNOWN_SENTENCE in messages[0].content
+    assert UNKNOWN_QUERY in messages[1].content
+    assert says_unknown(UNKNOWN_SENTENCE)

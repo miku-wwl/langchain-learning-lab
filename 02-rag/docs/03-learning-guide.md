@@ -169,3 +169,23 @@ response = (rag_prompt() | llm).invoke({
 **Result**：实际 Prompt 上下文包含来源、位置和“3 to 5 business days”；Qwen3-4b 的最终回答是 `After a refund is approved, the refund returns to the original payment method in **3 to 5 business days**.`。当前 Foundry Local 输出还包含 `<think>` 段，运行脚本会将其原样打印。
 
 **Why**：模型使用的证据来自 Retriever。若答案错误，要先看 Stage E/F 是否找错，再看 Stage G 的 Prompt 和生成。基础 RAG 是确定性调用管线，既没有 Tool Loop，也没有 Agent。
+
+## Stage H — Known / Paraphrase / Unknown
+
+**Concept**：一个 RAG 实验至少要看已知事实、换一种说法、知识库缺失三类问题。检索结果和最终回答要分别检查；单看最后一句可能掩盖检索错误。
+
+**Architecture**：三种 Question 都走同一个 `Retriever → context → prompt → LLM`，没有特殊的 Agent 分支。
+
+**Code**（[完整代码](../src/stage_h_grounding.py)）：
+
+```python
+for label, question in cases:
+    documents, context, response = answer_question(question, retriever, llm)
+    # 已知/同义：检查证据和关键事实；未知：检查拒答
+```
+
+**Run**：`.venv\Scripts\python.exe src\stage_h_grounding.py`
+
+**Result**：已知与同义问法都在 Top-K 找到到账证据，并回答 3–5 个工作日；`Who is the CEO of Northstar Shop?` 的 Top-K 无 CEO 信息，模型回答 `I cannot answer from the provided knowledge base.`
+
+**Why**：相似度搜索总会返回一些最相似的文档，即使它们无法回答问题。因此 Prompt 必须明确规定证据不足时拒答。单次本地 PASS 证明本次输入和模型组合的行为，不表示任何知识库都不会幻觉。
