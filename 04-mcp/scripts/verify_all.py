@@ -11,6 +11,7 @@ STAGES = [
     ('stage_c_raw_client.py', ['MCP_DISCOVERY=PASS', 'MCP_CALL=PASS']),
     ('stage_d_stdio.py', ['STDIO_TRANSPORT=PASS']),
     ('stage_e_http.py', ['STREAMABLE_HTTP=PASS']),
+    ('stage_f_mcp_adapter.py', ['MCP_ADAPTER_DISCOVERY=PASS']),
 ]
 
 

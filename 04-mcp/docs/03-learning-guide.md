@@ -74,3 +74,15 @@ MCP 规范负责能力的描述、发现与调用；模型的 Tool Calling 负�
 **Run**：`.\.venv\Scripts\python.exe -u src\stage_e_http.py`
 
 **Observed Result / Why**：HTTP 路径同样发现两个 Tool、读取 Resource/Prompt、调用 `add` 得到 5；测试结束时子进程已回收。本例设置 `json_response=True`，没有把 Streamable HTTP 误当成必须常驻的 SSE 连接。
+
+## F — MCPAdapter：MCP Tool 转为 LangChain BaseTool
+
+**Concept**：`MCPAdapter(Path(server))` 明确选择本地脚本，列出 MCP Tools 并转换成 LangChain `BaseTool`。给模型的仍是普通工具 schema。
+
+**Architecture**：MCP Server → MCP Client → MCPAdapter → `BaseTool` → Agent 可使用的工具列表。
+
+**Minimal Code**：`src/stage_f_mcp_adapter.py` 在 `async with MCPAdapter(...)` 生命周期内检查名称、描述、`a`/`b` schema，并 `ainvoke` 调用转换后的工具。
+
+**Run**：`.\.venv\Scripts\python.exe -u src\stage_f_mcp_adapter.py`
+
+**Observed Result / Why**：发现 `add`/`get_course_stage`，`add` 是 `BaseTool` 且返回文本内容 5。安装版的 `tool_call_schema` 为 `dict`，教学代码兼容这一实际类型。适配器完成协议到 LangChain Tool 的转换，不替代 Agent Runtime。
