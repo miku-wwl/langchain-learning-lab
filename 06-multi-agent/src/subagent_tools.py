@@ -9,7 +9,14 @@ from workers import invoke_worker
 def create_subagent_tools(workers: dict, events: list[dict] | None = None) -> list:
     def capture(kind: str, original_task: str, worker_task: str, result: dict) -> None:
         if events is not None:
-            events.append({"kind": kind, "internal_tool": result["calls"][0]["name"]})
+            events.append({
+                "kind": kind,
+                "supervisor_task": original_task,
+                "worker_task": worker_task,
+                "internal_tool": result["calls"][0]["name"],
+                "worker_message_types": [type(message).__name__ for message in result["messages"]],
+                "returned": result["filtered"],
+            })
 
     @tool
     def ask_record_agent(task: str) -> str:
