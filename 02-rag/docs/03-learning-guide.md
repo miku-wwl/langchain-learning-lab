@@ -146,3 +146,26 @@ direct = store.similarity_search(question, k=3)
 **Result**：Retriever 返回同样的 Top-3，顺序与直接 `similarity_search` 一致；Top-2 含“3 to 5 business days”。
 
 **Why**：把后续 RAG 写在 Retriever 接口之上，可以在未来换检索实现时少改上层代码；本章不继续引入混合检索或 reranker。
+
+## Stage G — 2-Step RAG
+
+**Concept**：先执行 Retriever，再把文档原文格式化为 `context`，与 `question` 一起填进 Prompt，最后调用本地 LLM。检索与生成的责任边界是显式的。
+
+**Architecture**：`Question → Retriever → Context → ChatPromptTemplate(context, question) → Qwen3-4b → Answer`。
+
+**Code**（[完整代码](../src/stage_g_rag.py)）：
+
+```python
+documents = retriever.invoke(question)
+context = format_docs(documents)
+response = (rag_prompt() | llm).invoke({
+    "context": context,
+    "question": question,
+})
+```
+
+**Run**：`.venv\Scripts\python.exe src\stage_g_rag.py`
+
+**Result**：实际 Prompt 上下文包含来源、位置和“3 to 5 business days”；Qwen3-4b 的最终回答是 `After a refund is approved, the refund returns to the original payment method in **3 to 5 business days**.`。当前 Foundry Local 输出还包含 `<think>` 段，运行脚本会将其原样打印。
+
+**Why**：模型使用的证据来自 Retriever。若答案错误，要先看 Stage E/F 是否找错，再看 Stage G 的 Prompt 和生成。基础 RAG 是确定性调用管线，既没有 Tool Loop，也没有 Agent。

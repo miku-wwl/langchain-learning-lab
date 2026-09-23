@@ -10,6 +10,7 @@ from stage_c_splitter import CHUNK_SIZE, split_documents
 from embedding_factory import create_local_embeddings
 from stage_d_embedding import cosine_similarity
 from stage_e_vectorstore import REFUND_QUERY
+from stage_g_rag import UNKNOWN_SENTENCE, format_docs, rag_prompt
 
 @pytest.fixture(scope="module")
 def indexed_corpus():
