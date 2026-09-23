@@ -33,3 +33,18 @@ User → Agent Harness（prompt、消息、middleware、checkpointer、HITL）
 **Run**：`python src/stage_b_streaming_pii.py`。
 
 **Observed Result / Why**：两种流都有事件；模型前文本中邮箱是 `[REDACTED_EMAIL]`，卡号只保留末四位。断言比较的是送往模型的输入，不是模型回答里是否重述敏感文本。
+
+## C — Tool Calling 与 Agent Loop
+
+**Concept / Architecture**：`@tool` 产生名称、描述和参数 schema。模型只给出 `AIMessage.tool_calls`；Harness 执行 Python 函数，生成 `ToolMessage`，再让模型产生最终 `AIMessage`。
+
+```text
+HumanMessage → AIMessage(tool_calls=[add]) → add(17,25)
+             → ToolMessage("42") → AIMessage(final)
+```
+
+**Minimal Code**：`src/tools.py` 定义 `add`、`get_current_date` 和 `echo_direct`；`src/stage_c_tools.py` 打印消息类型、调用参数、工具返回及最终消息。
+
+**Run**：`python src/stage_c_tools.py`。
+
+**Observed Result / Why**：`add(17,25)` 实际执行并返回 42；日期工具返回本地日期。`echo_direct` 的 `return_direct=True` 使最后一条成为 `ToolMessage`，省去工具之后的模型回答。普通工具结果不会自动成为最终答复，`return_direct` 才会改变循环终止方式。
