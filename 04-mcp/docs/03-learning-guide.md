@@ -120,3 +120,15 @@ HumanMessage("37 + 58")
 **Run**：`.\.venv\Scripts\python.exe -u src\stage_h_compare.py`
 
 **Observed Result / Why**：三条路径均得到 5；MCP 路径额外需要先发现 `add`。
+
+## I — 失败与安全边界
+
+**Concept**：MCP 暴露 capability，不自动决定其调用权限。未知 Tool、错误参数、Server 不可用必须清楚失败；敏感动作应在调用之前由应用政策/HITL 阻断。
+
+**Architecture**：Agent proposes Tool → 确定性审批门 → MCP Client → MCP Server。拒绝时不发出 MCP 调用。
+
+**Minimal Code**：`src/stage_i_security.py` 验证未知工具、Pydantic 参数校验、未监听端口的短超时与 STDERR；单独的 `delete_resource` 只返回 `SIMULATED delete`，审批函数先拒绝，再允许模拟调用。
+
+**Run**：`.\.venv\Scripts\python.exe -u src\stage_i_security.py`
+
+**Observed Result / Why**：未知 Tool 得到 error result，`add('abc',3)` 被 schema 拒绝，不可用 Server 明确报错；拒绝时工具零执行，批准后只产生模拟字符串。没有真实删除动作。03 的 Human Approval 思路是调用 MCP Tool 前的控制层，Tool 描述本身不是安全策略。
