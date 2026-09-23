@@ -1,0 +1,4 @@
+langchain[mcp]==1.4.2
+langchain-openai==1.6.4
+mcp==2.2.0
+pytest==8.4.2

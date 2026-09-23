@@ -1,0 +1,28 @@
+# 04 LangChain MCP 学习指南
+
+本章按 [04 教程](../../doc/04.LangChain_v1.4_MCP_更新版.md) 的路线，先证明 MCP 本身能发现与调用能力，再把 MCP Tool 交给 LangChain Agent。每个 Stage 的完整代码在 `src/stage_*.py`；以下命令都在 `04-mcp/` 内运行。
+
+```text
+User → Host（本章的 LangChain 应用）
+          ├─ Local LLM + Agent Runtime：决定何时调用、保存消息并循环
+          └─ MCP Client：按协议发现与调用能力
+                         ↓ STDIO 或 Streamable HTTP
+                      MCP Server：只暴露显式注册的能力
+                         ├─ Tools：执行动作
+                         ├─ Resources：提供内容
+                         └─ Prompts：提供可复用模板
+```
+
+MCP 规范负责能力的描述、发现与调用；模型的 Tool Calling 负责提出工具名称和参数；Agent Runtime 负责执行与后续循环。MCP Server 不承担 Agent 的推理职责。官方 [Python SDK Client 文档](https://py.sdk.modelcontextprotocol.io/client/) 说明了这几类协议操作；[LangChain MCPAdapter 参考](https://reference.langchain.com/python/langchain/mcp/adapter/MCPAdapter/list_tools) 说明了工具转换接口。
+
+## A — 直接 Python Tool baseline
+
+**Concept**：计算能力存在于普通 Python 函数里，本身与 MCP 无关。
+
+**Architecture**：Caller → `direct_tool.add(2,3)` → `5`。
+
+**Minimal Code**：`src/direct_tool.py` 定义有整数检查的 `add`；`src/stage_a_direct_tool.py` 直接调用。
+
+**Run**：`.\.venv\Scripts\python.exe -u src\stage_a_direct_tool.py`
+
+**Observed Result / Why**：返回 5。后面不论换 STDIO、HTTP 或 Agent，计算语义应保持一致；协议只改变接入方式。
