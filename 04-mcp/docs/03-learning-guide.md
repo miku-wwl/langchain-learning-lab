@@ -132,3 +132,7 @@ HumanMessage("37 + 58")
 **Run**：`.\.venv\Scripts\python.exe -u src\stage_i_security.py`
 
 **Observed Result / Why**：未知 Tool 得到 error result，`add('abc',3)` 被 schema 拒绝，不可用 Server 明确报错；拒绝时工具零执行，批准后只产生模拟字符串。没有真实删除动作。03 的 Human Approval 思路是调用 MCP Tool 前的控制层，Tool 描述本身不是安全策略。
+
+## 从哪里开始复习
+
+先运行 A，再运行 B/C，确认 MCP 不依赖 LLM；接着看 D/E 的传输边界，F 的转换，最后观察 G 的四类消息。完整复跑命令为 `.\.venv\Scripts\python.exe -u scripts\verify_all.py`；版本、逐关证据和最终状态见[验证报告](04-verification-report.md)。
