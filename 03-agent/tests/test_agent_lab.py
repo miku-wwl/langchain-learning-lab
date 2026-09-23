@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 from langchain.tools import ToolRuntime
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import StateGraph
 
@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from stage_d_tool_errors import divide, on_tool_error  # noqa: E402
 from stage_f_state_runtime import CustomState, get_user_info  # noqa: E402
+from stage_g_context import keep_recent_valid_history  # noqa: E402
 from tools import add, echo_direct, get_current_date  # noqa: E402
 
 def test_tool_function_schema_and_execution() -> None:
@@ -57,3 +58,21 @@ def test_custom_state_tool_runtime_injection() -> None:
         store=None,
     )
     assert "user_123" in get_user_info.func(runtime)
+
+
+def test_trim_keeps_valid_tool_pair() -> None:
+    messages = [
+        HumanMessage(content="old"),
+        AIMessage(content="old response"),
+        HumanMessage(content="older"),
+        AIMessage(content="older response"),
+        HumanMessage(content="recent"),
+        AIMessage(content="", tool_calls=[{"name": "add", "args": {"a": 1, "b": 2}, "id": "pair"}]),
+        ToolMessage(content="3", name="add", tool_call_id="pair"),
+        HumanMessage(content="now"),
+    ]
+    kept = keep_recent_valid_history(messages)
+    assert len(kept) == 5
+    assert any(isinstance(msg, ToolMessage) and msg.tool_call_id == "pair" for msg in kept)
+    with pytest.raises(ValueError):
+        keep_recent_valid_history([*messages[:-2], HumanMessage(content="now")])

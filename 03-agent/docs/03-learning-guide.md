@@ -88,3 +88,13 @@ HumanMessage → AIMessage(tool_calls=[add]) → add(17,25)
 | `user_id` | 业务身份 | 可在多个 thread 中相同 |
 
 `thread_id` 与 `user_id` 有不同职责；本例只演示 State 注入，不实现 Store。
+
+## G — Trim 与 Summarization
+
+**Concept / Architecture**：Trim 删除旧消息；Summarization 先用模型把旧信息压缩为摘要，再保留近期消息。两者都属于上下文管理 Middleware，不是模型的新能力。
+
+**Minimal Code**：`src/stage_g_context.py` 的 `@before_model` 返回 `RemoveMessage(REMOVE_ALL_MESSAGES)` 与保留消息，并检查工具调用 ID 与结果 ID 成对。`SummarizationMiddleware` 按 7 条消息触发，保留最近 2 条。
+
+**Run**：`python src/stage_g_context.py`。
+
+**Observed Result / Why**：Trim 从 8 条减到 5 条，含旧 `AIMessage(tool_calls)` 与配对的 `ToolMessage`；模型回复后共 6 条。摘要把 Python generators 和短例子的偏好放进一条摘要，同时保留最近提问。若只留工具调用而丢结果，历史不合法，因此裁剪前必须检查配对。
