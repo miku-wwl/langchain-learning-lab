@@ -37,3 +37,26 @@ chunks = list(model.stream("Write a short greeting."))
 **Result**：Qwen3-4b 的同步、异步和流式调用均返回非空内容；本次流式输出有 `STREAM_CHUNKS=194`。当前 Foundry Local 会把部分 `<think>` 文本放入原始回复，短输出上限可能截断最终句子。
 
 **Why**：后面换成其他本地模型、端点或获批准的 provider 时，Agent 上层调用方式可保持一致。流式片段不是完整回复，应用需要逐片段合并或展示。
+
+## Stage B — Prompt 与 Messages
+
+**Concept**：`ChatPromptTemplate` 把变量变成有角色的消息。System 消息表达规则，Human 消息表达用户输入；模板本身不访问模型。
+
+**Architecture**：`{language, text} → ChatPromptTemplate → [SystemMessage, HumanMessage] → Model → AIMessage`。
+
+**Code**（[完整代码](../src/stage_b_prompt.py)）：
+
+```python
+template = ChatPromptTemplate.from_messages([
+    ("system", "Translate the following from English into {language}."),
+    ("user", "{text}"),
+])
+prompt = template.invoke({"language": "Chinese", "text": "Hello, how are you?"})
+reply = create_local_model().invoke(prompt)
+```
+
+**Run**：`.venv\Scripts\python.exe src\stage_b_prompt.py`
+
+**Result**：模板产生 System/Human 两条消息；本地模型返回非空内容。测试还验证缺少 `language` 时会报缺少模板变量。Qwen3-4b 的短输出上限可能只显示其 `<think>` 段，因此本阶段以模板展开和真实调用为主要证据。
+
+**Why**：Prompt 与 Model 是两步。看清模板展开后的 Messages，才能判断错误来自输入、提示词，还是模型本身。

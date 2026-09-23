@@ -8,5 +8,7 @@ Use the locally loaded Foundry models required by each stage; no cloud key is re
 
 1. **Model and local runtime**
    - `python src/stage_a_model.py`
+2. **Prompt Template**
+   - `python src/stage_b_prompt.py`
 
 Run the stage script for its printed PASS marker. When tests are present, run `python -m pytest -q tests`.
