@@ -17,5 +17,7 @@ Use the locally loaded Foundry models required by each stage; no cloud key is re
 5. **Agent runtime and its extensions**
    - `python src/stage_e_agent.py`
    - `python src/stage_g_extensions.py`
+6. **Short-term memory and thread isolation**
+   - `python src/stage_f_memory.py`
 
 Run the stage script for its printed PASS marker. When tests are present, run `python -m pytest -q tests`.

@@ -137,3 +137,60 @@ result = agent.invoke({"messages": [{"role": "user", "content": "Calculate 17 + 
 **Result**：输出同时包含 `add` 的 tool call、内容为 `42` 的 ToolMessage 与包含 `42` 的最终回答；执行日志确认 Python 工具运行。
 
 **Why**：Agent 消除了业务代码里的派发循环，但并没有改变“模型请求 → 工具执行 → 工具结果 → 模型回答”的机制。
+
+## Stage F — State、Checkpointer 与短期记忆
+
+**Concept**：Agent State 存储 Messages；Checkpointer 按 `thread_id` 保存执行状态。下次相同线程的输入会接在已保存消息之后。`InMemorySaver` 只在当前进程中保存状态。
+
+**Architecture**：`thread_id → Checkpointer → Agent State.messages → Model`。
+
+**Code**（[完整代码](../src/stage_f_memory.py)）：
+
+```python
+saver = InMemorySaver()
+agent = create_agent(model=create_local_model(), tools=[], checkpointer=saver)
+config = {"configurable": {"thread_id": "alice-thread"}}
+agent.invoke({"messages": [{"role": "user", "content": "My name is Alice."}]}, config=config)
+second = agent.invoke({"messages": [{"role": "user", "content": "What is my name?"}]}, config=config)
+saved = agent.get_state(config).values["messages"]
+```
+
+**Run**：`.venv\Scripts\python.exe src\stage_f_memory.py`
+
+**Result**：`TURN_2=Alice`，新线程 `NEW_THREAD=UNKNOWN`；检查点中分别有 4 条与 2 条消息。
+
+**Why**：记忆来自已保存的消息状态，而不是模型参数被改写。换 `thread_id` 即换一条会话；跨线程用户资料属于另一类长期记忆，不由这个示例解决。
+
+## Stage G — Middleware 与 Structured Output
+
+**Concept**：Middleware 可在运行时影响 Agent 行为。本例 `@dynamic_prompt` 在模型调用前生成 System 提示。`ToolStrategy(Person)` 请求模型按 Pydantic schema 返回结构化对象。
+
+**Architecture**：`User → Middleware → Agent Model → schema tool call → validated Person`。
+
+**Code**（[完整代码](../src/stage_g_extensions.py)）：
+
+```python
+@dynamic_prompt
+def teaching_prompt(request: ModelRequest) -> str:
+    return "Answer the user briefly."
+
+structured_model = create_local_model()
+prompt = "Extract a Person using the response schema tool."
+if "qwen3" in structured_model.model_name.lower():
+    prompt += " /no_think"
+structured_agent = create_agent(
+    model=structured_model,
+    tools=[],
+    response_format=ToolStrategy(Person),
+    system_prompt=prompt,
+)
+person = structured_agent.invoke({"messages": [{"role": "user", "content": "Alice is 30 years old."}]})["structured_response"]
+```
+
+**Run**：`.venv\Scripts\python.exe src\stage_g_extensions.py`
+
+**Result**：`MIDDLEWARE_CALLS=[1]`，`STRUCTURED_RESPONSE=name='Alice' age=30`。
+
+在当前 Foundry Local 版本中，Qwen3-4b 的思考输出可能让结构化 schema 工具调用迟迟不能完成。实现只在模型 ID 为 Qwen3 时给结构化 Agent 的 System Prompt 加 `/no_think`；本地复跑后得到上述结构化结果。
+
+**Why**：Middleware 改变 Harness 的行为；Structured Output 将结果交给 schema 校验。这里没有扩展成复杂策略系统。
