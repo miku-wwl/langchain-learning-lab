@@ -48,3 +48,13 @@ HumanMessage → AIMessage(tool_calls=[add]) → add(17,25)
 **Run**：`python src/stage_c_tools.py`。
 
 **Observed Result / Why**：`add(17,25)` 实际执行并返回 42；日期工具返回本地日期。`echo_direct` 的 `return_direct=True` 使最后一条成为 `ToolMessage`，省去工具之后的模型回答。普通工具结果不会自动成为最终答复，`return_direct` 才会改变循环终止方式。
+
+## D — Tool Error Middleware
+
+**Concept / Architecture**：`divide(1,0)` 抛出 `ZeroDivisionError`，`ToolErrorMiddleware` 转成 `status="error"` 的 `ToolMessage`，Agent 继续解释。
+
+**Minimal Code**：`src/stage_d_tool_errors.py` 中 `on_tool_error` 生成简短错误文本。
+
+**Run**：`python src/stage_d_tool_errors.py`。
+
+**Observed Result / Why**：工具尝试一次、错误处理一次、Agent 又生成 AI 消息。**错误处理**把失败交给模型；**重试**会再执行工具。本例没有装 `ToolRetryMiddleware`，所以零除不会重复运行。
