@@ -19,7 +19,7 @@
 
 **Concept**：LangChain 的 Chat Model 接受文本或消息并返回 `AIMessage`。同步、异步和流式调用是同一个模型接口的不同执行方式。
 
-**Architecture**：`User → ChatOpenAI 适配器 → Foundry Local /v1 → 本地 Qwen3-4b → AIMessage`。`model_factory.py` 从 Foundry CLI 发现动态端口和已加载模型 ID，学习代码只依赖 LangChain 模型对象。
+**Architecture**：`User → ChatOpenAI 适配器 → Foundry Local /v1 → 本地 Phi-4-mini → AIMessage`。`model_factory.py` 从 Foundry CLI 发现动态端口和已加载模型 ID，学习代码只依赖 LangChain 模型对象。
 
 **Code**（[完整代码](../src/stage_a_model.py)）：
 
@@ -34,9 +34,9 @@ chunks = list(model.stream("Write a short greeting."))
 
 **Run**：`.venv\Scripts\python.exe src\stage_a_model.py`
 
-**Result**：Qwen3-4b 的同步、异步和流式调用均返回非空内容；本次流式输出有 `STREAM_CHUNKS=194`。当前 Foundry Local 会把部分 `<think>` 文本放入原始回复，短输出上限可能截断最终句子。
+**Result**：真实运行得到 `INVOKE=Hello!`、`init_chat_model` 的非空回复、`AINVOKE=I am Phi, an advanced digital assistant.`、`STREAM_CHUNKS=12`。
 
-**Why**：后面换成其他本地模型、端点或获批准的 provider 时，Agent 上层调用方式可保持一致。流式片段不是完整回复，应用需要逐片段合并或展示。
+**Why**：后面换成 Qwen、其他本地端点或获批准的 provider 时，Agent 上层调用方式可保持一致。流式片段不是完整回复，应用需要逐片段合并或展示。
 
 ## Stage B — Prompt 与 Messages
 
@@ -57,7 +57,7 @@ reply = create_local_model().invoke(prompt)
 
 **Run**：`.venv\Scripts\python.exe src\stage_b_prompt.py`
 
-**Result**：模板产生 System/Human 两条消息；本地模型返回非空内容。测试还验证缺少 `language` 时会报缺少模板变量。Qwen3-4b 的短输出上限可能只显示其 `<think>` 段，因此本阶段以模板展开和真实调用为主要证据。
+**Result**：模板产生 System/Human 两条消息；本地模型回复 `你好，怎么样?`。测试还验证缺少 `language` 时会报缺少模板变量。
 
 **Why**：Prompt 与 Model 是两步。看清模板展开后的 Messages，才能判断错误来自输入、提示词，还是模型本身。
 
@@ -75,7 +75,7 @@ def add(a: int, b: int) -> int:
     """Add two integers and return the sum."""
     return a + b
 
-reply = create_local_model().bind_tools([add]).invoke(
+reply = create_local_model("qwen2.5-0.5b").bind_tools([add]).invoke(
     "Use the add tool to calculate 17 + 25. Return the tool result."
 )
 print(reply.tool_calls)
@@ -128,7 +128,7 @@ final_reply = model.invoke(messages)
 **Code**（[完整代码](../src/stage_e_agent.py)）：
 
 ```python
-agent = create_agent(model=create_local_model(), tools=[add])
+agent = create_agent(model=create_local_model("qwen2.5-0.5b"), tools=[add])
 result = agent.invoke({"messages": [{"role": "user", "content": "Calculate 17 + 25 using add."}]})
 ```
 
@@ -174,15 +174,10 @@ saved = agent.get_state(config).values["messages"]
 def teaching_prompt(request: ModelRequest) -> str:
     return "Answer the user briefly."
 
-structured_model = create_local_model()
-prompt = "Extract a Person using the response schema tool."
-if "qwen3" in structured_model.model_name.lower():
-    prompt += " /no_think"
 structured_agent = create_agent(
-    model=structured_model,
+    model=create_local_model("qwen2.5-0.5b"),
     tools=[],
     response_format=ToolStrategy(Person),
-    system_prompt=prompt,
 )
 person = structured_agent.invoke({"messages": [{"role": "user", "content": "Alice is 30 years old."}]})["structured_response"]
 ```
@@ -190,8 +185,6 @@ person = structured_agent.invoke({"messages": [{"role": "user", "content": "Alic
 **Run**：`.venv\Scripts\python.exe src\stage_g_extensions.py`
 
 **Result**：`MIDDLEWARE_CALLS=[1]`，`STRUCTURED_RESPONSE=name='Alice' age=30`。
-
-在当前 Foundry Local 版本中，Qwen3-4b 的思考输出可能让结构化 schema 工具调用迟迟不能完成。实现只在模型 ID 为 Qwen3 时给结构化 Agent 的 System Prompt 加 `/no_think`；本地复跑后得到上述结构化结果。
 
 **Why**：Middleware 改变 Harness 的行为；Structured Output 将结果交给 schema 校验。这里没有扩展成复杂策略系统。
 
@@ -230,11 +223,7 @@ result = builder.compile().invoke({"value": 20, "visited": []})
 ```python
 async with MCPAdapter(Path("src/mcp_server.py")) as adapter:
     tools = await adapter.list_tools()
-    model = create_local_model()
-    prompt = "Use the MCP add tool, then copy its result."
-    if "qwen3" in model.model_name.lower():
-        prompt += " /no_think"
-    agent = create_agent(model=model, tools=tools, system_prompt=prompt)
+    agent = create_agent(model=create_local_model("qwen2.5-0.5b"), tools=tools)
     result = await agent.ainvoke({"messages": [{"role": "user", "content": "Use add to calculate 17 + 25."}]})
 ```
 
@@ -242,6 +231,10 @@ async with MCPAdapter(Path("src/mcp_server.py")) as adapter:
 
 **Result**：发现 `['add']`；Agent 产生 `add(17,25)`，来自 MCP Server 的 ToolMessage 文本为 `42`，最终回答包含 `42`。运行时会看到 `langchain.mcp` beta 警告。
 
-本机 Qwen3-4b 在默认思考输出下曾只解释工具调用而没有发出结构化 `tool_calls`。MCP Agent 的 System Prompt 对 Qwen3 加 `/no_think` 后，真实工具调用和最终回答均通过。
-
 **Why**：直接 LangChain Tool 与 MCP Tool 进入 Agent 后很相似；MCP 增加的是独立工具服务和协议边界。这里用本地进程完整验证，后续 04 阶段再深入 MCP。
+
+## Stage J — LangSmith 与下一步
+
+LangSmith 可以记录 trace，建立 dataset 和 evaluation，并观察运行中的 Agent。本 Lab 没有设置 `LANGSMITH_API_KEY` 或 tracing，状态是 **OPTIONAL / NOT REQUIRED FOR LOCAL E2E**。运行 Agent 与观察 Agent 是不同层；这里先把本地行为跑通。
+
+原教程也提到 Deep Agents、HITL、Interrupt、Persistence、Long-term Memory。这些在 01 中只需认清位置，不展开实现。完成本页后可用 `.venv\Scripts\python.exe scripts\verify_all.py` 重跑完整链路，并查看 [verification report](04-verification-report.md)。
