@@ -68,3 +68,23 @@ HumanMessage → AIMessage(tool_calls=[add]) → add(17,25)
 **Run**：`python src/stage_e_memory.py`。
 
 **Observed Result / Why**：第一线程有四条消息且包含 Alice；第二线程只有自己的两条消息，没有 Alice。自然语言回答也被显示，但状态检查才是隔离的主要证据。
+
+## F — Agent State 与 ToolRuntime
+
+**Concept / Architecture**：`CustomState(AgentState)` 添加 `user_id`；`ToolRuntime` 把当前 State 注入工具，模型的工具 schema 不包含 `runtime` 参数。
+
+**Minimal Code**：`src/stage_f_state_runtime.py` 的 `get_user_info(runtime)` 读取 `runtime.state["user_id"]`。
+
+**Run**：`python src/stage_f_state_runtime.py`。
+
+**Observed Result / Why**：输入的 `user_123` 出现在 Agent State、工具执行记录和 `ToolMessage` 中；模型没有自行生成此 ID。
+
+| 概念 | 生命周期 | 用途 |
+| --- | --- | --- |
+| State | 当前 thread 的可变运行状态 | messages、计数器、这里的 `user_id` |
+| Context | 单次 invoke 的只读上下文 | 请求级身份或配置，不进消息状态 |
+| Store | 跨 thread 的共享长期数据 | 用户偏好、长期记忆 |
+| `thread_id` | Checkpointer 的会话键 | 选择哪段短期历史 |
+| `user_id` | 业务身份 | 可在多个 thread 中相同 |
+
+`thread_id` 与 `user_id` 有不同职责；本例只演示 State 注入，不实现 Store。

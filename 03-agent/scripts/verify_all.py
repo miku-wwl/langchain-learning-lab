@@ -11,6 +11,7 @@ STAGES = [
     ('stage_c_tools.py', ['TOOL_CALLING_EXECUTION_LOOP=PASS', 'CURRENT_DATE_TOOL=PASS', 'RETURN_DIRECT=PASS']),
     ('stage_d_tool_errors.py', ['TOOL_ERROR_MIDDLEWARE=PASS']),
     ('stage_e_memory.py', ['THREAD_MEMORY_ISOLATION=PASS']),
+    ('stage_f_state_runtime.py', ['STATE_TOOL_RUNTIME=PASS']),
 ]
 
 
