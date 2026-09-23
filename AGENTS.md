@@ -168,3 +168,16 @@ This repository is primarily for learning LangChain and LangGraph internals.
 When a stage is complete, stop.
 
 Do not automatically expand into production architecture or resume-project scope.
+
+## Chapter Independence
+
+Every numbered chapter must be independently runnable and verifiable.
+
+A chapter may assume conceptual knowledge from earlier chapters,
+but must not depend on code from a later chapter.
+
+Prefer self-contained examples over cross-chapter code reuse.
+
+Running a chapter must not require another chapter to be running.
+
+Each chapter must have its own E2E verification entry point.
