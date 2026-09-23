@@ -14,5 +14,8 @@ Use the locally loaded Foundry models required by each stage; no cloud key is re
    - `python src/stage_c_tools.py`
 4. **Manual ToolMessage loop**
    - `python src/stage_d_manual_tool_loop.py`
+5. **Agent runtime and its extensions**
+   - `python src/stage_e_agent.py`
+   - `python src/stage_g_extensions.py`
 
 Run the stage script for its printed PASS marker. When tests are present, run `python -m pytest -q tests`.

@@ -118,3 +118,22 @@ final_reply = model.invoke(messages)
 **Result**：真实调用为 `add(17,25)`，`TOOL_MESSAGE=42`，最终回答包含 `42`；`ADD_EXECUTIONS` 还证实 Python 函数确实执行。
 
 **Why**：LLM Tool Calling 是“请求执行”的消息格式；Agent Runtime 才负责重复执行模型、工具和消息传递，直到形成最终结果。
+
+## Stage E — `create_agent`
+
+**Concept**：`create_agent` 将 Stage D 的手工循环封装为 Agent Harness。输入输出仍是 Messages，工具定义仍是同一个 `add`。
+
+**Architecture**：`HumanMessage → Agent(Model ↔ Tool) → AIMessage`。Agent 内部保留 AI 工具调用和 ToolMessage，便于检查真实执行链。
+
+**Code**（[完整代码](../src/stage_e_agent.py)）：
+
+```python
+agent = create_agent(model=create_local_model(), tools=[add])
+result = agent.invoke({"messages": [{"role": "user", "content": "Calculate 17 + 25 using add."}]})
+```
+
+**Run**：`.venv\Scripts\python.exe src\stage_e_agent.py`
+
+**Result**：输出同时包含 `add` 的 tool call、内容为 `42` 的 ToolMessage 与包含 `42` 的最终回答；执行日志确认 Python 工具运行。
+
+**Why**：Agent 消除了业务代码里的派发循环，但并没有改变“模型请求 → 工具执行 → 工具结果 → 模型回答”的机制。
