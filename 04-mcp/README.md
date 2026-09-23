@@ -1,34 +1,18 @@
-# 04 — Model Context Protocol
+# 04 — LangChain MCP 本地学习实验
 
-## Goal
+按照当前 04 教程逐步建立独立、可运行的 MCP 学习路径。
 
-Learn how an MCP client discovers and calls tools exposed by an MCP server, and how that fits with LangChain.
+## 运行
 
-## Learning Scope
+```powershell
+cd D:\workshop\sep\langchain-learning-lab\04-mcp
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -u scripts\verify_all.py
+```
 
-- Implement or run a minimal local MCP server exposing a focused tool.
-- Connect an MCP client and inspect tool discovery and schemas.
-- Call a tool and verify its result through the client.
-- Document the transport and the boundary between MCP and LangChain.
+## 已实现学习点
 
-Keep the server and client local. Do not add deployment infrastructure or expose the server publicly for this learning stage.
+- 01: Direct Tool baseline
 
-## Suggested Learning Flow
-
-Concept → architecture → code → run → result → why. Record the transport, startup commands, discovered tool, and observed call result.
-
-## Verification Record
-
-Fill this in after running the example. Do not claim success from code inspection alone.
-
-| Item | Record |
-| --- | --- |
-| Python version | TBD |
-| LangChain version | TBD |
-| LangGraph version | TBD / not used |
-| Model/runtime | TBD |
-| MCP SDK and transport | TBD |
-| Commands executed | TBD |
-| Test results | TBD |
-| E2E result | TBD |
-| Blockers | TBD / none |
+详细解释见 `docs/03-learning-guide.md`。
