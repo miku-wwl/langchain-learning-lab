@@ -106,3 +106,23 @@ unrelated = cosine_similarity(query, weather)
 **Result**：本地 `BAAI/bge-small-en-v1.5` 产生 384 维向量；本次运行 `similarity(refund, refund)=0.8687`，`similarity(refund, weather)=0.4193`。首次获取的模型缓存约 64 MB；关闭 Hugging Face 网络访问后重跑仍成功。
 
 **Why**：这证明程序使用真实语义向量，且相关文本比无关文本接近。具体分数随模型而变，只应测试排序与检索行为。索引和查询必须用兼容的 Embedding 空间。
+
+## Stage E — Chunks → Vector Store → Similarity Search
+
+**Concept**：Embedding 模型执行 `Text → Vector`；Vector Store 保存向量、Chunk 原文与 metadata，并用 Query 向量搜索相近条目。两者不是同一个组件。
+
+**Architecture**：`8 Chunks → Embedding → InMemoryVectorStore`；随后 `Query → Query Embedding → Top-K Documents`。
+
+**Code**（[完整代码](../src/stage_e_vectorstore.py)）：
+
+```python
+store = InMemoryVectorStore(embeddings)
+store.add_documents(chunks)
+results = store.similarity_search_with_score(question, k=3)
+```
+
+**Run**：`.venv\Scripts\python.exe src\stage_e_vectorstore.py`
+
+**Result**：8 个 Chunk 被索引；退款到账问题的 Top-1 是“签收后 7 天可申请退款”（score `0.8250`），真正的到账时间证据排在 Top-2（score `0.8055`），Top-3 是退款例外与审核时间。
+
+**Why**：这正好展示检索排序问题。只看“有一个相关文档”还不够；应观察排名和 Top-K 内容。这里 k=3 让正确证据进入上下文。普通关键词匹配关注字面词，语义检索则比较向量，能处理一部分措辞变化，但也可能把同主题的不同规则排在前面。

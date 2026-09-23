@@ -14,5 +14,7 @@ Use the locally loaded Foundry `qwen3-4b` model; no cloud key is required.
    - `python src/stage_c_splitter.py`
 4. **Local embedding**
    - `python src/stage_d_embedding.py`
+5. **Vector store and similarity search**
+   - `python src/stage_e_vectorstore.py`
 
 Run the stage script for its printed PASS marker. When tests are present, run `python -m pytest -q tests`.
