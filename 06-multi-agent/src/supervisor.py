@@ -7,11 +7,11 @@ from langchain_core.messages import AIMessage, ToolMessage
 from model_factory import create_local_model
 
 
-def build_supervisor(wrappers: list):
+def build_supervisor(wrappers: list, *, required_calls: int = 1):
     @wrap_model_call
     def require_delegation(request, handler):
-        used_tool = any(isinstance(message, ToolMessage) for message in request.messages)
-        choice = "none" if used_tool else "required"
+        completed = sum(isinstance(message, ToolMessage) for message in request.messages)
+        choice = "required" if completed < required_calls else "none"
         return handler(request.override(tool_choice=choice))
 
     return create_agent(
@@ -20,7 +20,8 @@ def build_supervisor(wrappers: list):
             "You are a coordinator for fictional learning-lab data. Delegate domain work to "
             "specialists. History/records -> ask_record_agent ONLY. Guideline/guide -> "
             "ask_guideline_agent ONLY. Doctor/directory -> ask_doctor_agent ONLY. The only "
-            "allowed evidence is what specialist tools return. In the final "
+            "allowed evidence is what specialist tools return. For a request spanning domains, "
+            "call every needed specialist; do not repeat a completed specialist. In the final "
             "reply copy the specialist results without adding claims. Name any error explicitly. "
             "Do not invent medical facts or advice. /no_think"
         ),
