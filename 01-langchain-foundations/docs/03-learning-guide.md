@@ -86,3 +86,35 @@ print(reply.tool_calls)
 **Result**：直接调用工具返回 `42`；Qwen 的 `tool_calls` 包含 `name='add'`、`args={'a': 17, 'b': 25}`。模型原始文本也出现 `<tool_call>`，程序以解析后的 `tool_calls` 为准。
 
 **Why**：`bind_tools != Agent`。这一阶段只证明模型会请求工具；下一阶段才执行它。
+
+## Stage D — 手工 Tool Loop
+
+**Concept**：收到 `tool_calls` 后，调用方必须派发到正确的 Python 工具，把结果以带相同 `tool_call_id` 的 `ToolMessage` 放回消息序列，再次调用模型。
+
+**Architecture**：
+
+```text
+HumanMessage → Model → AIMessage.tool_calls
+                         ↓
+                    Python add(17, 25)
+                         ↓
+                  ToolMessage("42")
+                         ↓
+                      Model → 最终 AIMessage
+```
+
+**Code**（[完整代码](../src/stage_d_manual_tool_loop.py)）：
+
+```python
+first_reply = model.invoke(messages)
+messages.append(first_reply)
+for call in first_reply.tool_calls:
+    messages.append(dispatch_tool_call(call))
+final_reply = model.invoke(messages)
+```
+
+**Run**：`.venv\Scripts\python.exe src\stage_d_manual_tool_loop.py`
+
+**Result**：真实调用为 `add(17,25)`，`TOOL_MESSAGE=42`，最终回答包含 `42`；`ADD_EXECUTIONS` 还证实 Python 函数确实执行。
+
+**Why**：LLM Tool Calling 是“请求执行”的消息格式；Agent Runtime 才负责重复执行模型、工具和消息传递，直到形成最终结果。
