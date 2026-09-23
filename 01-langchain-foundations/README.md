@@ -21,5 +21,7 @@ Use the locally loaded Foundry models required by each stage; no cloud key is re
    - `python src/stage_f_memory.py`
 7. **Minimal LangGraph**
    - `python src/stage_h_graph.py`
+8. **Local MCP preview**
+   - `python src/stage_i_mcp.py`
 
 Run the stage script for its printed PASS marker. When tests are present, run `python -m pytest -q tests`.

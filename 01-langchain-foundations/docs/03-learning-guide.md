@@ -218,3 +218,30 @@ result = builder.compile().invoke({"value": 20, "visited": []})
 **Result**：`{'value': 42, 'visited': ['increment', 'double']}`。`visited` 使用 reducer 累积两个节点的更新。
 
 **Why**：普通 Python 函数适合固定、短小的流程；LangChain Agent 适合让模型选择工具并循环；LangGraph 适合需要显式状态、分支和恢复的流程。本例只验证图的基本构造，深入内容留给 05 阶段。
+
+## Stage I — 本地 MCP Server
+
+**Concept**：MCP Server 暴露工具，`MCPAdapter` 发现并转成 LangChain Tool，Agent 再按正常 Tool Loop 执行。MCP 不替代 Agent。
+
+**Architecture**：`LangChain Agent → MCPAdapter → 本地 stdio FastMCP 子进程 → add → ToolMessage → Agent`。
+
+**Code**（[Server](../src/mcp_server.py)、[完整 Stage](../src/stage_i_mcp.py)）：
+
+```python
+async with MCPAdapter(Path("src/mcp_server.py")) as adapter:
+    tools = await adapter.list_tools()
+    model = create_local_model()
+    prompt = "Use the MCP add tool, then copy its result."
+    if "qwen3" in model.model_name.lower():
+        prompt += " /no_think"
+    agent = create_agent(model=model, tools=tools, system_prompt=prompt)
+    result = await agent.ainvoke({"messages": [{"role": "user", "content": "Use add to calculate 17 + 25."}]})
+```
+
+**Run**：`.venv\Scripts\python.exe src\stage_i_mcp.py`
+
+**Result**：发现 `['add']`；Agent 产生 `add(17,25)`，来自 MCP Server 的 ToolMessage 文本为 `42`，最终回答包含 `42`。运行时会看到 `langchain.mcp` beta 警告。
+
+本机 Qwen3-4b 在默认思考输出下曾只解释工具调用而没有发出结构化 `tool_calls`。MCP Agent 的 System Prompt 对 Qwen3 加 `/no_think` 后，真实工具调用和最终回答均通过。
+
+**Why**：直接 LangChain Tool 与 MCP Tool 进入 Agent 后很相似；MCP 增加的是独立工具服务和协议边界。这里用本地进程完整验证，后续 04 阶段再深入 MCP。
