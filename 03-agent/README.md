@@ -18,5 +18,6 @@ py -3.13 -m venv .venv
 - C: tool calling and ToolMessage loop（`src/stage_c_tools.py`）
 - D: tool error middleware（`src/stage_d_tool_errors.py`）
 - E: memory and thread isolation（`src/stage_e_memory.py`）
+- F: State and ToolRuntime（`src/stage_f_state_runtime.py`）
 
 学习说明见 `docs/03-learning-guide.md`。
