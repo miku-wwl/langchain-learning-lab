@@ -18,12 +18,11 @@ uv pip install --python .venv\Scripts\python.exe -r requirements.txt
 
 ```powershell
 foundry model list --cached --type chat
-foundry model load phi-4-mini
-foundry model load qwen2.5-0.5b
+foundry model load qwen3-4b
 foundry server status
 ```
 
-本机验证使用 `Phi-4-mini-instruct-generic-gpu:5`（模型、Prompt、Memory）和 `qwen2.5-0.5b-instruct-generic-gpu:4`（工具调用、Agent、MCP）。两者此前已缓存，加载没有重新下载模型。`model_factory.py` 自动读取 Foundry 当前端口与已加载 ID；端口会变化，无需写死。
+本机默认使用已缓存的 `qwen3-4b-generic-gpu:2`，Model、Prompt、Tool Calling、Agent、Memory、Structured Output 和 MCP 已用它完成本地 E2E。`model_factory.py` 自动读取 Foundry 当前端口与已加载 ID；端口会变化，无需写死。模型的 `<think>` 内容会出现在部分原始输出中；结构化输出和 MCP 阶段仅对 Qwen3 追加 `/no_think`，以便得到可解析的工具调用。
 
 如果使用其他本地 OpenAI-compatible 端点，可参考 [.env.example](.env.example) 在 PowerShell 中设置 `LOCAL_LLM_BASE_URL` 和 `LOCAL_LLM_MODEL` 环境变量。该示例文件不会自动加载；所选模型需要支持 tool calling 才能通过工具阶段。
 
