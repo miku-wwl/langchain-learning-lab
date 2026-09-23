@@ -16,5 +16,7 @@ Use the locally loaded Foundry `qwen3-4b` model; no cloud key is required.
    - `python src/stage_d_embedding.py`
 5. **Vector store and similarity search**
    - `python src/stage_e_vectorstore.py`
+6. **Retriever abstraction**
+   - `python src/stage_f_retriever.py`
 
 Run the stage script for its printed PASS marker. When tests are present, run `python -m pytest -q tests`.

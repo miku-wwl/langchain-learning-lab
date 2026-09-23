@@ -126,3 +126,23 @@ results = store.similarity_search_with_score(question, k=3)
 **Result**：8 个 Chunk 被索引；退款到账问题的 Top-1 是“签收后 7 天可申请退款”（score `0.8250`），真正的到账时间证据排在 Top-2（score `0.8055`），Top-3 是退款例外与审核时间。
 
 **Why**：这正好展示检索排序问题。只看“有一个相关文档”还不够；应观察排名和 Top-K 内容。这里 k=3 让正确证据进入上下文。普通关键词匹配关注字面词，语义检索则比较向量，能处理一部分措辞变化，但也可能把同主题的不同规则排在前面。
+
+## Stage F — Vector Store → Retriever
+
+**Concept**：Vector Store 提供保存、搜索等能力；Retriever 提供统一的 `Query → list[Document]` 接口。Retriever 本身没有改变这个示例的搜索算法。
+
+**Architecture**：`InMemoryVectorStore.as_retriever(k=3) → retriever.invoke(question) → Top-3 Documents`。
+
+**Code**（[完整代码](../src/stage_f_retriever.py)）：
+
+```python
+retriever = store.as_retriever(search_kwargs={"k": 3})
+retrieved = retriever.invoke(question)
+direct = store.similarity_search(question, k=3)
+```
+
+**Run**：`.venv\Scripts\python.exe src\stage_f_retriever.py`
+
+**Result**：Retriever 返回同样的 Top-3，顺序与直接 `similarity_search` 一致；Top-2 含“3 to 5 business days”。
+
+**Why**：把后续 RAG 写在 Retriever 接口之上，可以在未来换检索实现时少改上层代码；本章不继续引入混合检索或 reranker。

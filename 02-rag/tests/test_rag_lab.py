@@ -49,3 +49,9 @@ def test_vector_store_search_and_scores(indexed_corpus):
     assert len(results) == 3
     assert all(isinstance(doc, Document) and isfinite(score) for doc, score in results)
     assert any("3 to 5 business days" in doc.page_content for doc, _ in results)
+
+def test_retriever_matches_direct_search(indexed_corpus):
+    _, _, _, store = indexed_corpus
+    retriever = store.as_retriever(search_kwargs={"k": 3})
+    direct = store.similarity_search(REFUND_QUERY, k=3)
+    assert [doc.page_content for doc in retriever.invoke(REFUND_QUERY)] == [doc.page_content for doc in direct]
