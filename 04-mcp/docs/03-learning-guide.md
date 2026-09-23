@@ -38,3 +38,15 @@ MCP 规范负责能力的描述、发现与调用；模型的 Tool Calling 负�
 **Run**：`.\.venv\Scripts\python.exe -u src\stage_b_server.py`
 
 **Observed Result / Why**：列出两个 Tool、一项 Resource、一项 Prompt；`add` schema 中 `a`/`b` 是整数。Tool 做动作，Resource 给数据，Prompt 给模板，三者不可混称 Tool。
+
+## C — Raw MCP Client：先发现，再调用
+
+**Concept**：`Client(mcp)` 是 SDK 的 in-process 测试模式。它仍走 MCP Client API，但不证明子进程或网络传输。
+
+**Architecture**：Client → `list_tools()` → 选 `add` → `call_tool()` → 结构化 `{'result': 5}`。Resource 用 `read_resource()`，Prompt 用 `get_prompt()`。
+
+**Minimal Code**：`src/raw_client.py` 的 `inspect_client` 先检查发现列表与 schema，再做工具调用、资源读取、提示渲染；`src/stage_c_raw_client.py` 不 import LangChain。
+
+**Run**：`.\.venv\Scripts\python.exe -u src\stage_c_raw_client.py`
+
+**Observed Result / Why**：发现 `add`/`get_course_stage`，调用结果是 5；还读到 Resource 与 Prompt，协商协议版本为 `2026-07-28`。这一关把 MCP 自身故障与后续模型选择问题分开。
