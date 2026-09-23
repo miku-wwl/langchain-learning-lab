@@ -8,5 +8,7 @@ Use the locally loaded Foundry `qwen3-4b` model; no cloud key is required.
 
 1. **Local LLM baseline and FAQ**
    - `python src/stage_a_baseline.py`
+2. **Document loader**
+   - `python src/stage_b_loader.py`
 
 Run the stage script for its printed PASS marker. When tests are present, run `python -m pytest -q tests`.
