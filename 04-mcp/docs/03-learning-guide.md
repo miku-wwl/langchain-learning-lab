@@ -62,3 +62,15 @@ MCP 规范负责能力的描述、发现与调用；模型的 Tool Calling 负�
 **Run**：`.\.venv\Scripts\python.exe -u src\stage_d_stdio.py`
 
 **Observed Result / Why**：Client/Server PID 不同；Tool、Resource、Prompt 均可访问；stderr 包含 `MCP_STDIO_STARTING pid=...`，JSON-RPC 调用没有被日志污染。Windows 上 `io.StringIO` 没有子进程需要的 `fileno()`，所以这里使用 `tempfile.TemporaryFile`。
+
+## E — Streamable HTTP：本机网络边界
+
+**Concept**：同一个 Server 以 Streamable HTTP 监听回环地址；Client 连接 `/mcp`。按当前[传输规范](https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http)，客户端消息经 HTTP POST，请求可得到 JSON 或该请求范围内的 SSE 响应。
+
+**Architecture**：Client → `127.0.0.1:<动态端口>/mcp` → 独立 Server 进程。
+
+**Minimal Code**：`src/raw_http_client.py` 选临时端口、启动并在 `finally` 中终止/回收子进程；`src/stage_e_http.py` 用原生 `Client(url)` 调用。
+
+**Run**：`.\.venv\Scripts\python.exe -u src\stage_e_http.py`
+
+**Observed Result / Why**：HTTP 路径同样发现两个 Tool、读取 Resource/Prompt、调用 `add` 得到 5；测试结束时子进程已回收。本例设置 `json_response=True`，没有把 Streamable HTTP 误当成必须常驻的 SSE 连接。
