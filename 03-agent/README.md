@@ -1,33 +1,18 @@
-# 03 — Agents and Tools
+# 03 — LangChain Agent 本地学习实验
 
-## Goal
+本章基于当前 03 教程，按概念逐步实现；每个已提交阶段都可以独立运行。
 
-Understand how a LangChain agent chooses and calls tools, then uses tool results to continue a task.
+## 准备
 
-## Learning Scope
+```powershell
+cd D:\workshop\sep\langchain-learning-lab\03-agent
+py -3.13 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -u scripts\verify_all.py
+```
 
-- Define a small tool with a clear input and output.
-- Bind or expose tools to a model and observe tool-call selection.
-- Run the agent/tool loop and inspect intermediate steps.
-- Handle invalid arguments and tool errors.
+## 已实现阶段
 
-Use a bounded, local example. Validate tool calls and side effects rather than relying on exact model wording.
+- A: create_agent and local model（`src/stage_a_agent.py`）
 
-## Suggested Learning Flow
-
-Concept → architecture → code → run → result → why. Show the tool definition, invocation, and returned result in the learning notes.
-
-## Verification Record
-
-Fill this in after running the example. Do not claim success from code inspection alone.
-
-| Item | Record |
-| --- | --- |
-| Python version | TBD |
-| LangChain version | TBD |
-| LangGraph version | TBD / record if used |
-| Model/runtime | TBD |
-| Commands executed | TBD |
-| Test results | TBD |
-| E2E result | TBD |
-| Blockers | TBD / none |
+学习说明见 `docs/03-learning-guide.md`。
