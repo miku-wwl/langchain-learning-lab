@@ -14,5 +14,6 @@ py -3.13 -m venv .venv
 ## 已实现阶段
 
 - A: create_agent and local model（`src/stage_a_agent.py`）
+- B: streaming and PII（`src/stage_b_streaming_pii.py`）
 
 学习说明见 `docs/03-learning-guide.md`。

@@ -23,3 +23,13 @@ User → Agent Harness（prompt、消息、middleware、checkpointer、HITL）
 **Run**：`python src/stage_a_agent.py`。
 
 **Observed Result / Why**：本地模型返回 `HumanMessage → AIMessage`；捕获到的系统提示与设置值一致。它证明提示进入模型请求，而非只存在于调用方变量。
+
+## B — Streaming 与 PII Middleware
+
+**Concept / Architecture**：`stream_mode="updates"` 给节点状态更新，`stream_mode="messages"` 给消息流片段；二者观察同一 Agent 循环的不同侧面。`PIIMiddleware` 在模型调用前处理输入。
+
+**Minimal Code**：`src/stage_b_streaming_pii.py` 分别消费两种流；把假的邮箱与卡号送入 Agent，再从 `@wrap_model_call` 捕获模型实际看到的文本。
+
+**Run**：`python src/stage_b_streaming_pii.py`。
+
+**Observed Result / Why**：两种流都有事件；模型前文本中邮箱是 `[REDACTED_EMAIL]`，卡号只保留末四位。断言比较的是送往模型的输入，不是模型回答里是否重述敏感文本。

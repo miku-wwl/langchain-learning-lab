@@ -7,6 +7,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 STAGES = [
     ('stage_a_agent.py', ['CREATE_AGENT_CHAT=PASS']),
+    ('stage_b_streaming_pii.py', ['STREAM_UPDATES=PASS', 'STREAM_MESSAGES=PASS', 'PII_BEFORE_MODEL=PASS']),
 ]
 
 
