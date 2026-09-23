@@ -10,6 +10,7 @@ STAGES = [
     ('stage_b_streaming_pii.py', ['STREAM_UPDATES=PASS', 'STREAM_MESSAGES=PASS', 'PII_BEFORE_MODEL=PASS']),
     ('stage_c_tools.py', ['TOOL_CALLING_EXECUTION_LOOP=PASS', 'CURRENT_DATE_TOOL=PASS', 'RETURN_DIRECT=PASS']),
     ('stage_d_tool_errors.py', ['TOOL_ERROR_MIDDLEWARE=PASS']),
+    ('stage_e_memory.py', ['THREAD_MEMORY_ISOLATION=PASS']),
 ]
 
 
