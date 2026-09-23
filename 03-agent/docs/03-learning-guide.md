@@ -58,3 +58,13 @@ HumanMessage → AIMessage(tool_calls=[add]) → add(17,25)
 **Run**：`python src/stage_d_tool_errors.py`。
 
 **Observed Result / Why**：工具尝试一次、错误处理一次、Agent 又生成 AI 消息。**错误处理**把失败交给模型；**重试**会再执行工具。本例没有装 `ToolRetryMiddleware`，所以零除不会重复运行。
+
+## E — Short-term Memory
+
+**Concept / Architecture**：`InMemorySaver` 按 `thread_id` 保存 State。模型自身不会自动拥有之前调用的上下文。
+
+**Minimal Code**：`src/stage_e_memory.py` 在 `thread-a` 告诉 Agent 用户名 Alice，再问名字；在另一线程单独提问，并检查 `get_state()` 的消息列表。
+
+**Run**：`python src/stage_e_memory.py`。
+
+**Observed Result / Why**：第一线程有四条消息且包含 Alice；第二线程只有自己的两条消息，没有 Alice。自然语言回答也被显示，但状态检查才是隔离的主要证据。

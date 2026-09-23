@@ -17,5 +17,6 @@ py -3.13 -m venv .venv
 - B: streaming and PII（`src/stage_b_streaming_pii.py`）
 - C: tool calling and ToolMessage loop（`src/stage_c_tools.py`）
 - D: tool error middleware（`src/stage_d_tool_errors.py`）
+- E: memory and thread isolation（`src/stage_e_memory.py`）
 
 学习说明见 `docs/03-learning-guide.md`。
