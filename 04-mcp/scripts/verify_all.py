@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 STAGES = [
     ('stage_a_direct_tool.py', ['DIRECT_PYTHON_TOOL=PASS']),
     ('stage_b_server.py', ['MCP_SERVER_PRIMITIVES=PASS']),
+    ('stage_c_raw_client.py', ['MCP_DISCOVERY=PASS', 'MCP_CALL=PASS']),
 ]
 
 
