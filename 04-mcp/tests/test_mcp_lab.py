@@ -16,6 +16,8 @@ from raw_client import inspect_client  # noqa: E402
 from stage_d_stdio import run as stdio_run  # noqa: E402
 from stage_e_http import run as http_run  # noqa: E402
 from stage_f_mcp_adapter import run as adapter_run  # noqa: E402
+from stage_g_agent_mcp import run as agent_run  # noqa: E402
+from stage_h_compare import run as comparison_run  # noqa: E402
 
 def test_direct_add() -> None:
     assert add(2, 3) == 5
@@ -46,3 +48,11 @@ def test_http_discovery_and_shutdown() -> None:
 
 def test_mcp_adapter_tool_conversion() -> None:
     asyncio.run(adapter_run())
+
+
+def test_agent_calls_mcp_tool() -> None:
+    asyncio.run(agent_run())
+
+
+def test_direct_adapter_mcp_comparison() -> None:
+    asyncio.run(comparison_run())
