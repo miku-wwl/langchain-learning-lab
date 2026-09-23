@@ -1,0 +1,9 @@
+langchain==1.4.2
+langchain-core==1.6.4
+langchain-openai==1.6.4
+langchain-community==0.4.2
+langchain-text-splitters==1.1.2
+langgraph==1.2.12
+fastembed==0.8.1
+onnxruntime==1.30.0
+pytest==8.4.2

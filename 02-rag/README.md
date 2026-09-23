@@ -1,34 +1,12 @@
-# 02 — Retrieval-Augmented Generation
+# 02 — LangChain RAG: progressive local lab
 
-## Goal
+Each committed stage below is independently runnable from this directory.
+Install the pinned packages in `requirements.txt` into a Python virtual environment.
+Use the locally loaded Foundry `qwen3-4b` model; no cloud key is required.
 
-Build a small RAG example and understand how retrieved source material is supplied to a model.
+## Available concepts
 
-## Learning Scope
+1. **Local LLM baseline and FAQ**
+   - `python src/stage_a_baseline.py`
 
-- Load a small local document set.
-- Split documents into chunks and preserve useful metadata.
-- Create embeddings and use a local vector store or other local retriever.
-- Retrieve relevant chunks and ground a model response in them.
-- Inspect retrieved sources and handle an empty or weak retrieval result.
-
-Keep the data local and the example small. Do not add cloud embeddings, hosted vector databases, or unrelated application infrastructure.
-
-## Suggested Learning Flow
-
-Concept → architecture → code → run → result → why. Make the retrieval results visible so they can be compared with the answer.
-
-## Verification Record
-
-Fill this in after running the example. Do not claim success from code inspection alone.
-
-| Item | Record |
-| --- | --- |
-| Python version | TBD |
-| LangChain version | TBD |
-| LangGraph version | TBD / not used |
-| Model/runtime | TBD |
-| Commands executed | TBD |
-| Test results | TBD |
-| E2E result | TBD |
-| Blockers | TBD / none |
+Run the stage script for its printed PASS marker. When tests are present, run `python -m pytest -q tests`.
