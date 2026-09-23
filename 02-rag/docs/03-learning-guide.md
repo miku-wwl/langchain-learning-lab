@@ -1,0 +1,210 @@
+# LangChain 02：一步步看清两步 RAG
+
+先读 [原始 02 教程](../../doc/02.LangChain_v1.4_02_RAG_更新版.md) 了解概念，再按本页 Stage A–H 顺序运行。具体安装命令在 [README](../README.md)，知识点边界在 [syllabus analysis](01-syllabus-analysis.md)。本实验只用一份虚构公司 FAQ、本地聊天模型、本地 Embedding 和内存向量库。
+
+## 先看完整路线
+
+```text
+INDEXING（知识变化时）                    QUERY TIME（每次提问）
+TXT → Loader → Document → Splitter       Question → Retriever
+                   ↓                                      ↓
+                Chunks → Embedding → InMemoryVectorStore  ↓
+                                             ↑             ↓
+                                             └── 相似度搜索 ┘
+                                                    ↓
+                                                  Context
+                                                    ↓
+                                         Prompt(context, question)
+                                                    ↓
+                                              Local LLM → Answer
+```
+
+Indexing 把知识变成可搜索的向量及原文；查询时先检索，再把取回的原文交给模型生成。这个流程由 Python 显式控制，模型不决定是否检索，所以基础两步 RAG 不需要 Agent。
+
+## Stage A — 没有 RAG 的 Baseline
+
+**Concept**：先直接问模型一个虚构公司的内部政策。这个阶段只观察模型在没有内部资料时怎样回答，不要求它一定产生幻觉。
+
+**Architecture**：`Question → Foundry Local Qwen3-4b → Answer`。
+
+**Code**（[完整代码](../src/stage_a_baseline.py)）：
+
+```python
+response = create_local_chat_model().invoke(
+    "What is Northstar Shop's exact refund deadline after delivery?"
+)
+```
+
+**Run**：`.venv\Scripts\python.exe src\stage_a_baseline.py`
+
+**Result**：模型回答它无法访问 Northstar Shop 的内部政策。Stage A 确认聊天端真实运行，但不把这个回答视作退款规则证据。
+
+**Why**：内部政策不在模型当前输入中。RAG 的目的，是在推理时提供可核查的外部知识；Fine-tuning 则主要调整模型行为、格式或领域适应，两者可同时使用。
+
+## Stage B — File → Document
+
+**Concept**：普通 TXT 文件只是磁盘上的字节。`TextLoader` 将它转换为 LangChain `Document`，把正文放在 `page_content`，把来源放在 `metadata`。
+
+**Architecture**：`resources/company_faq.txt → TextLoader → list[Document]`。
+
+**Code**（[完整代码](../src/stage_b_loader.py)）：
+
+```python
+documents = TextLoader(str(FAQ_PATH), encoding="utf-8").load()
+print(documents[0].page_content)
+print(documents[0].metadata)
+```
+
+**Run**：`.venv\Scripts\python.exe src\stage_b_loader.py`
+
+**Result**：得到 1 个 `Document`；正文包含 refund、delivery、membership、support，metadata 的 `source` 指向 FAQ 文件。
+
+**Why**：后面的 Splitter、Vector Store 和 Retriever 都传递 `Document`，这样正文与来源可以一起流动。当前 `langchain-community` 0.4.2 的 `TextLoader` 能运行，但包会发出 sunset 警告；本 Lab 固定版本，并在报告里解释。
+
+## Stage C — Document → Chunks
+
+**Concept**：太长的 Document 往往把不相关信息混在一起。`RecursiveCharacterTextSplitter` 优先按段落、换行、空格等自然边界切分，生成较短的 Chunk。`chunk_size` 是目标上限，`chunk_overlap` 是相邻块可共享的目标长度。
+
+**Architecture**：`Document(完整 FAQ) → RecursiveCharacterTextSplitter → 8 个 Chunk`。
+
+**Code**（[完整代码](../src/stage_c_splitter.py)）：
+
+```python
+splitter = RecursiveCharacterTextSplitter(
+    chunk_size=180, chunk_overlap=25, add_start_index=True
+)
+chunks = splitter.split_documents(documents)
+```
+
+**Run**：`.venv\Scripts\python.exe src\stage_c_splitter.py`
+
+**Result**：1 个 Document 被切成 8 个 Chunk；每块保留 `source`，并新增 `start_index`。退款到账证据位于 `start_index=327` 的 Chunk。自然段落边界下不保证每对相邻 Chunk 都有 25 字符重叠；另一个固定长度示例实际打印出相同的 15 字符尾部/头部。
+
+**Why**：Document 是加载后的完整资料，Chunk 是用于索引与检索的片段。Chunk 太大增加噪声，太小会切断语义，overlap 只能缓解一部分边界问题。[官方 splitter 指南](https://docs.langchain.com/oss/python/integrations/splitters/recursive_text_splitter)也说明其递归分隔符顺序和 overlap 是目标值。
+
+## Stage D — Text → Embedding Vector
+
+**Concept**：Embedding 模型把文本映射到固定长度的数值向量。向量不是摘要或答案；向量之间的距离可帮助找到语义相近的文本。LLM 负责生成回答，Embedding 模型负责表示文本以供搜索。
+
+**Architecture**：`refund question / refund policy / weather sentence → local FastEmbed → 384D vectors → cosine similarity`。
+
+**Code**（[工厂](../src/embedding_factory.py)、[完整 Stage](../src/stage_d_embedding.py)）：
+
+```python
+embeddings = create_local_embeddings()
+query = embeddings.embed_query("How can I get a refund?")
+refund, weather = embeddings.embed_documents([
+    "What is the refund policy?",
+    "The weather is sunny today.",
+])
+related = cosine_similarity(query, refund)
+unrelated = cosine_similarity(query, weather)
+```
+
+**Run**：`.venv\Scripts\python.exe src\stage_d_embedding.py`
+
+**Result**：本地 `BAAI/bge-small-en-v1.5` 产生 384 维向量；本次运行 `similarity(refund, refund)=0.8687`，`similarity(refund, weather)=0.4193`。首次获取的模型缓存约 64 MB；关闭 Hugging Face 网络访问后重跑仍成功。
+
+**Why**：这证明程序使用真实语义向量，且相关文本比无关文本接近。具体分数随模型而变，只应测试排序与检索行为。索引和查询必须用兼容的 Embedding 空间。
+
+## Stage E — Chunks → Vector Store → Similarity Search
+
+**Concept**：Embedding 模型执行 `Text → Vector`；Vector Store 保存向量、Chunk 原文与 metadata，并用 Query 向量搜索相近条目。两者不是同一个组件。
+
+**Architecture**：`8 Chunks → Embedding → InMemoryVectorStore`；随后 `Query → Query Embedding → Top-K Documents`。
+
+**Code**（[完整代码](../src/stage_e_vectorstore.py)）：
+
+```python
+store = InMemoryVectorStore(embeddings)
+store.add_documents(chunks)
+results = store.similarity_search_with_score(question, k=3)
+```
+
+**Run**：`.venv\Scripts\python.exe src\stage_e_vectorstore.py`
+
+**Result**：8 个 Chunk 被索引；退款到账问题的 Top-1 是“签收后 7 天可申请退款”（score `0.8250`），真正的到账时间证据排在 Top-2（score `0.8055`），Top-3 是退款例外与审核时间。
+
+**Why**：这正好展示检索排序问题。只看“有一个相关文档”还不够；应观察排名和 Top-K 内容。这里 k=3 让正确证据进入上下文。普通关键词匹配关注字面词，语义检索则比较向量，能处理一部分措辞变化，但也可能把同主题的不同规则排在前面。
+
+## Stage F — Vector Store → Retriever
+
+**Concept**：Vector Store 提供保存、搜索等能力；Retriever 提供统一的 `Query → list[Document]` 接口。Retriever 本身没有改变这个示例的搜索算法。
+
+**Architecture**：`InMemoryVectorStore.as_retriever(k=3) → retriever.invoke(question) → Top-3 Documents`。
+
+**Code**（[完整代码](../src/stage_f_retriever.py)）：
+
+```python
+retriever = store.as_retriever(search_kwargs={"k": 3})
+retrieved = retriever.invoke(question)
+direct = store.similarity_search(question, k=3)
+```
+
+**Run**：`.venv\Scripts\python.exe src\stage_f_retriever.py`
+
+**Result**：Retriever 返回同样的 Top-3，顺序与直接 `similarity_search` 一致；Top-2 含“3 to 5 business days”。
+
+**Why**：把后续 RAG 写在 Retriever 接口之上，可以在未来换检索实现时少改上层代码；本章不继续引入混合检索或 reranker。
+
+## Stage G — 2-Step RAG
+
+**Concept**：先执行 Retriever，再把文档原文格式化为 `context`，与 `question` 一起填进 Prompt，最后调用本地 LLM。检索与生成的责任边界是显式的。
+
+**Architecture**：`Question → Retriever → Context → ChatPromptTemplate(context, question) → Qwen3-4b → Answer`。
+
+**Code**（[完整代码](../src/stage_g_rag.py)）：
+
+```python
+documents = retriever.invoke(question)
+context = format_docs(documents)
+response = (rag_prompt() | llm).invoke({
+    "context": context,
+    "question": question,
+})
+```
+
+**Run**：`.venv\Scripts\python.exe src\stage_g_rag.py`
+
+**Result**：实际 Prompt 上下文包含来源、位置和“3 to 5 business days”；Qwen3-4b 的最终回答是 `After a refund is approved, the refund returns to the original payment method in **3 to 5 business days**.`。当前 Foundry Local 输出还包含 `<think>` 段，运行脚本会将其原样打印。
+
+**Why**：模型使用的证据来自 Retriever。若答案错误，要先看 Stage E/F 是否找错，再看 Stage G 的 Prompt 和生成。基础 RAG 是确定性调用管线，既没有 Tool Loop，也没有 Agent。
+
+## Stage H — Known / Paraphrase / Unknown
+
+**Concept**：一个 RAG 实验至少要看已知事实、换一种说法、知识库缺失三类问题。检索结果和最终回答要分别检查；单看最后一句可能掩盖检索错误。
+
+**Architecture**：三种 Question 都走同一个 `Retriever → context → prompt → LLM`，没有特殊的 Agent 分支。
+
+**Code**（[完整代码](../src/stage_h_grounding.py)）：
+
+```python
+for label, question in cases:
+    documents, context, response = answer_question(question, retriever, llm)
+    # 已知/同义：检查证据和关键事实；未知：检查拒答
+```
+
+**Run**：`.venv\Scripts\python.exe src\stage_h_grounding.py`
+
+**Result**：已知与同义问法都在 Top-K 找到到账证据，并回答 3–5 个工作日；`Who is the CEO of Northstar Shop?` 的 Top-K 无 CEO 信息，模型回答 `I cannot answer from the provided knowledge base.`
+
+**Why**：相似度搜索总会返回一些最相似的文档，即使它们无法回答问题。因此 Prompt 必须明确规定证据不足时拒答。单次本地 PASS 证明本次输入和模型组合的行为，不表示任何知识库都不会幻觉。
+
+## Stage I — Redis（可选）
+
+原教程把 Redis 保留为存储实现替换路线。本章没有启用 Redis，状态是 **OPTIONAL / NOT RUN**。内存向量库已经完成完整的本地两步 RAG。未来若有 Redis 环境，应该只替换 Vector Store；Loader、Splitter、Retriever 上层接口、Prompt 和 LLM 仍保留相同职责。
+
+## 八组容易混淆的概念
+
+| 对比 | 记住这句话 |
+| --- | --- |
+| Document / Chunk | Document 是加载后的资料对象；Chunk 是从它切出的检索片段。 |
+| Embedding Model / LLM | 前者生成可比较的向量；后者根据消息生成回答。 |
+| Embedding / Vector | Embedding 是转换过程或表示方法；Vector 是转换后的一组数。 |
+| Vector Store / Retriever | 前者保存并搜索向量；后者向上层提供 Query → Documents 接口。 |
+| Retrieval / Generation | 前者找证据；后者基于证据组织答案。 |
+| Keyword / Semantic Search | 前者匹配字词；后者比较向量中的语义邻近程度。 |
+| RAG / Fine-tuning | RAG 在推理时提供外部资料；微调改变模型参数或行为。 |
+| RAG Pipeline / Agent | 基础 Pipeline 每次都按固定顺序检索；Agent 让模型参与选择下一步。 |
+
+完成本页后运行 `.venv\Scripts\python.exe -m pytest -q` 与 `.venv\Scripts\python.exe scripts\verify_all.py`，对照 [验证报告](04-verification-report.md) 查看真实结果和限制。
