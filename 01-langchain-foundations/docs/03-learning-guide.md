@@ -194,3 +194,27 @@ person = structured_agent.invoke({"messages": [{"role": "user", "content": "Alic
 在当前 Foundry Local 版本中，Qwen3-4b 的思考输出可能让结构化 schema 工具调用迟迟不能完成。实现只在模型 ID 为 Qwen3 时给结构化 Agent 的 System Prompt 加 `/no_think`；本地复跑后得到上述结构化结果。
 
 **Why**：Middleware 改变 Harness 的行为；Structured Output 将结果交给 schema 校验。这里没有扩展成复杂策略系统。
+
+## Stage H — 最小 LangGraph
+
+**Concept**：LangGraph 把状态更新和控制流显式表示。Node 接收当前 State 并返回更新，Edge 指定下一个 Node。`compile()` 生成可运行图，`invoke()` 执行。
+
+**Architecture**：`START → increment → double → END`，初始 `value=20`，先加 1 再乘 2。
+
+**Code**（[完整代码](../src/stage_h_graph.py)）：
+
+```python
+builder = StateGraph(NumberState)
+builder.add_node("increment", increment)
+builder.add_node("double", double)
+builder.add_edge(START, "increment")
+builder.add_edge("increment", "double")
+builder.add_edge("double", END)
+result = builder.compile().invoke({"value": 20, "visited": []})
+```
+
+**Run**：`.venv\Scripts\python.exe src\stage_h_graph.py`
+
+**Result**：`{'value': 42, 'visited': ['increment', 'double']}`。`visited` 使用 reducer 累积两个节点的更新。
+
+**Why**：普通 Python 函数适合固定、短小的流程；LangChain Agent 适合让模型选择工具并循环；LangGraph 适合需要显式状态、分支和恢复的流程。本例只验证图的基本构造，深入内容留给 05 阶段。

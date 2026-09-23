@@ -11,6 +11,7 @@ from langchain_core.messages import HumanMessage
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
+from stage_h_graph import build_graph
 
 def test_prompt_inputs_are_required_and_rendered():
     template = translation_prompt()
@@ -51,3 +52,9 @@ def test_checkpointer_isolates_threads():
     graph.invoke({"messages": [HumanMessage(content="new thread")]}, config=other)
     assert [m.content for m in graph.get_state(alice).values["messages"]] == ["Alice", "second turn"]
     assert [m.content for m in graph.get_state(other).values["messages"]] == ["new thread"]
+
+def test_graph_state_updates_in_order():
+    assert build_graph().invoke({"value": 20, "visited": []}) == {
+        "value": 42,
+        "visited": ["increment", "double"],
+    }
