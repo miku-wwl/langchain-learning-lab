@@ -114,3 +114,26 @@ HumanMessage → AIMessage(tool_calls=[add]) → add(17,25)
 **Run**：`python src/stage_h_hitl.py`。
 
 **Observed Result / Why**：安全工具直接执行；SQL 在 interrupt 前没有执行。批准后 `SIMULATED_SQL_CALLS` 增加一次，拒绝后不增加，Agent 收到拒绝 `ToolMessage`。这是审批门控实验，不验证数据库能力。
+
+## I — Skill 渐进式披露
+
+**Concept / Architecture**：启动时只解析 `skills/ai_teacher/SKILL.md` 的 `name` 与 `description`，完整正文在 `load_skill` 被调用时才读入并作为 `ToolMessage` 进入模型上下文。
+
+**Minimal Code**：`src/stage_i_skill.py` 捕获首轮与工具之后的模型视图，并搜索正文独有的 `LESSON_PLAN_SEQUENCE` 标记。
+
+**Run**：`python src/stage_i_skill.py`。
+
+**Observed Result / Why**：首轮模型视图没有正文标记，模型调用 `load_skill(ai_teacher)` 后，工具结果与第二轮模型视图包含标记。小模型在自由工具选择下曾跳过加载；本教学入口对首轮请求设置 `tool_choice="required"`，用户任务又明确要求使用该 Skill。这证明按需加载顺序，但不证明小模型能在任意任务下自主判断 Skill 相关性。
+
+Skill 不只是一个工具名称；关键是按需把任务说明加入上下文。Deep Agents 有正式 Skills 能力，本章的手写版本只展示这一底层机制。
+
+## Middleware 的统一位置
+
+| Middleware | Agent Loop 中的职责 |
+| --- | --- |
+| PII | 模型调用前的输入治理 |
+| ToolError | 工具异常到错误消息的转换 |
+| Summarization | 模型调用前的上下文压缩 |
+| HumanInTheLoop | 工具执行前的审批与恢复 |
+
+这四个例子都在 Harness 的生命周期钩子上工作。详细命令、版本和最终状态见 [验证报告](04-verification-report.md)。
