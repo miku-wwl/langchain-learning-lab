@@ -18,7 +18,7 @@ def _foundry_json(*args: str) -> dict:
     return json.loads(result.stdout)
 
 
-def local_model_config(preferred_alias: str = "phi-4-mini") -> tuple[str, str]:
+def local_model_config(preferred_alias: str = "qwen3-4b") -> tuple[str, str]:
     """Return (OpenAI-compatible base URL, loaded model ID)."""
     base_url = os.getenv("LOCAL_LLM_BASE_URL")
     model_id = os.getenv("LOCAL_LLM_MODEL")
@@ -31,7 +31,7 @@ def local_model_config(preferred_alias: str = "phi-4-mini") -> tuple[str, str]:
         loaded = _foundry_json("model", "list", "--loaded")["models"]
         models = [model for model in loaded if model.get("type") == "Chat"]
         if not models:
-            raise RuntimeError("No local chat model loaded; run 'foundry model load phi-4-mini'")
+            raise RuntimeError("No local chat model loaded; run 'foundry model load qwen3-4b'")
         preferred = next((m for m in models if m.get("alias") == preferred_alias), None)
         if preferred is None:
             raise RuntimeError(f"Local model '{preferred_alias}' is not loaded")
@@ -39,7 +39,7 @@ def local_model_config(preferred_alias: str = "phi-4-mini") -> tuple[str, str]:
     return base_url, model_id
 
 
-def create_local_model(preferred_alias: str = "phi-4-mini") -> ChatOpenAI:
+def create_local_model(preferred_alias: str = "qwen3-4b") -> ChatOpenAI:
     # Windows shells can default to cp1252 even when a model replies in Chinese.
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")

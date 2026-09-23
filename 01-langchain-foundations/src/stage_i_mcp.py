@@ -18,13 +18,17 @@ async def run() -> None:
         print(f"MCP_DISCOVERED_TOOLS={names}")
         assert "add" in names
 
+        model = create_local_model()
+        system_prompt = (
+            "Use the MCP add tool for arithmetic. After its result, "
+            "copy the exact number from the tool response into your final answer."
+        )
+        if "qwen3" in model.model_name.lower():
+            system_prompt += " /no_think"
         agent = create_agent(
-            model=create_local_model("qwen2.5-0.5b"),
+            model=model,
             tools=tools,
-            system_prompt=(
-                "Use the MCP add tool for arithmetic. After its result, "
-                "copy the exact number from the tool response into your final answer."
-            ),
+            system_prompt=system_prompt,
         )
         result = await agent.ainvoke(
             {"messages": [{"role": "user", "content": "Use add to calculate 17 + 25."}]},

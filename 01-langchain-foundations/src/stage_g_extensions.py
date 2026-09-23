@@ -36,11 +36,15 @@ def run() -> None:
     print(f"MIDDLEWARE_CALLS={MIDDLEWARE_CALLS}")
     print(f"MIDDLEWARE_ANSWER={middleware_result['messages'][-1].content}")
 
+    structured_model = create_local_model()
+    structured_prompt = "Extract a Person from the user text using the response schema tool."
+    if "qwen3" in structured_model.model_name.lower():
+        structured_prompt += " /no_think"
     structured_agent = create_agent(
-        model=create_local_model("qwen2.5-0.5b"),
+        model=structured_model,
         tools=[],
         response_format=ToolStrategy(Person),
-        system_prompt="Extract a Person from the user text using the response schema tool.",
+        system_prompt=structured_prompt,
     )
     structured_result = structured_agent.invoke(
         {"messages": [{"role": "user", "content": "Alice is 30 years old."}]},

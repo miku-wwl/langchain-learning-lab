@@ -9,7 +9,7 @@ from tools import ADD_EXECUTIONS, add
 
 def run() -> None:
     agent = create_agent(
-        model=create_local_model("qwen2.5-0.5b"),
+        model=create_local_model(),
         tools=[add],
         system_prompt="Use the add tool for arithmetic. After the tool result, answer briefly.",
     )

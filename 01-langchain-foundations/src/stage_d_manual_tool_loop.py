@@ -17,7 +17,7 @@ def dispatch_tool_call(call: dict) -> ToolMessage:
 
 
 def run() -> None:
-    model = create_local_model("qwen2.5-0.5b").bind_tools([add])
+    model = create_local_model().bind_tools([add])
     messages = [
         SystemMessage(content="Use the add tool for arithmetic. After its result, give the number only."),
         HumanMessage(content="Calculate 17 + 25 using the add tool."),

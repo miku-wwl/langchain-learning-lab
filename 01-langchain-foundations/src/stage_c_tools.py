@@ -10,7 +10,7 @@ def run() -> None:
     assert ADD_EXECUTIONS[-1] == (17, 25)
     print(f"TOOL_SCHEMA={add.args_schema.model_json_schema()}")
 
-    model = create_local_model("qwen2.5-0.5b").bind_tools([add])
+    model = create_local_model().bind_tools([add])
     message = model.invoke(
         "Use the add tool to calculate 17 + 25. Return the tool result."
     )
