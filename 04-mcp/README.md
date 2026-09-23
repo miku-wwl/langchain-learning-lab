@@ -16,5 +16,6 @@ python -m venv .venv
 - 01: Direct Tool baseline
 - 02: MCP Server primitives
 - 03: Raw Client discovery and call
+- 04: STDIO transport
 
 详细解释见 `docs/03-learning-guide.md`。
