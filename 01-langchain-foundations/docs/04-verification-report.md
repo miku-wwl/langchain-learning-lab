@@ -80,3 +80,7 @@ foundry model list --loaded --output json
 **当前 blocker：无。** LangSmith 没有接入，因为它是可选观测平台，不能作为本地 Agent E2E 的必需条件。Phi/Qwen 的自然语言措辞可能随重复运行变化，所以 E2E 校验结构、工具执行和关键事实，不比较整句文本。
 
 **最终结论：PASS_LOCAL。** 这证明本机当前已缓存模型、Foundry Local 服务和固定依赖组合下的 01 学习链路真实运行成功；并不表示任何云 provider、跨进程持久化或生产部署已经验证。
+
+## 2026-09-23：Qwen3-4b 候选模型复核
+
+本机已缓存并加载 `qwen3-4b-generic-gpu:2`。本次仅通过临时 `LOCAL_LLM_MODEL` 环境变量覆盖模型，未改动 01 的默认选择。单独的 Stage C 工具调用返回结构化 `add(17, 25)`，状态 PASS。随后统一入口实测 Model、Prompt、工具调用、手写工具循环、`create_agent`、短期记忆和 LangGraph 为 PASS；Middleware / Structured Output 与 MCP 各在 180 秒后超时，候选模型的整章结果为 **PARTIAL**。Qwen3-4b 在本机还会输出较长的 `<think>` 文本。现有 Phi-4-mini 与 qwen2.5-0.5b 组合仍是上文已经完整通过的 01 默认配置；不能把候选模型这次的部分通过当成 01 的新 E2E PASS。

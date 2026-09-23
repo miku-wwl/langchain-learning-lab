@@ -189,3 +189,22 @@ for label, question in cases:
 **Result**：已知与同义问法都在 Top-K 找到到账证据，并回答 3–5 个工作日；`Who is the CEO of Northstar Shop?` 的 Top-K 无 CEO 信息，模型回答 `I cannot answer from the provided knowledge base.`
 
 **Why**：相似度搜索总会返回一些最相似的文档，即使它们无法回答问题。因此 Prompt 必须明确规定证据不足时拒答。单次本地 PASS 证明本次输入和模型组合的行为，不表示任何知识库都不会幻觉。
+
+## Stage I — Redis（可选）
+
+原教程把 Redis 保留为存储实现替换路线。本章没有启用 Redis，状态是 **OPTIONAL / NOT RUN**。内存向量库已经完成完整的本地两步 RAG。未来若有 Redis 环境，应该只替换 Vector Store；Loader、Splitter、Retriever 上层接口、Prompt 和 LLM 仍保留相同职责。
+
+## 八组容易混淆的概念
+
+| 对比 | 记住这句话 |
+| --- | --- |
+| Document / Chunk | Document 是加载后的资料对象；Chunk 是从它切出的检索片段。 |
+| Embedding Model / LLM | 前者生成可比较的向量；后者根据消息生成回答。 |
+| Embedding / Vector | Embedding 是转换过程或表示方法；Vector 是转换后的一组数。 |
+| Vector Store / Retriever | 前者保存并搜索向量；后者向上层提供 Query → Documents 接口。 |
+| Retrieval / Generation | 前者找证据；后者基于证据组织答案。 |
+| Keyword / Semantic Search | 前者匹配字词；后者比较向量中的语义邻近程度。 |
+| RAG / Fine-tuning | RAG 在推理时提供外部资料；微调改变模型参数或行为。 |
+| RAG Pipeline / Agent | 基础 Pipeline 每次都按固定顺序检索；Agent 让模型参与选择下一步。 |
+
+完成本页后运行 `.venv\Scripts\python.exe -m pytest -q` 与 `.venv\Scripts\python.exe scripts\verify_all.py`，对照 [验证报告](04-verification-report.md) 查看真实结果和限制。
