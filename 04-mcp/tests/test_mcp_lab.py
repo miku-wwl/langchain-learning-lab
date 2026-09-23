@@ -1,4 +1,4 @@
-"""Checks for MCP stages introduced so far."""
+"""Deterministic protocol checks plus one real local-model Agent E2E lane."""
 
 import asyncio
 import sys
@@ -7,12 +7,13 @@ from pathlib import Path
 import pytest
 from mcp import Client
 
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from direct_tool import add  # noqa: E402
 from mcp_server import mcp  # noqa: E402
-from stage_b_server import run as server_run  # noqa: E402
 from raw_client import inspect_client  # noqa: E402
+from stage_b_server import run as server_run  # noqa: E402
 from stage_d_stdio import run as stdio_run  # noqa: E402
 from stage_e_http import run as http_run  # noqa: E402
 from stage_f_mcp_adapter import run as adapter_run  # noqa: E402
@@ -24,6 +25,7 @@ from stage_i_security import (  # noqa: E402
     expected_tool_failure,
     unavailable_server,
 )
+
 
 def test_direct_add() -> None:
     assert add(2, 3) == 5
