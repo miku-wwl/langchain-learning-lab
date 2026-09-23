@@ -14,6 +14,7 @@ STAGES = [
     ('stage_f_mcp_adapter.py', ['MCP_ADAPTER_DISCOVERY=PASS']),
     ('stage_g_agent_mcp.py', ['AGENT_MCP_TOOL_CALL=PASS']),
     ('stage_h_compare.py', ['INTEGRATION_COMPARISON=PASS']),
+    ('stage_i_security.py', ['SIMULATED_APPROVAL_BOUNDARY=PASS']),
 ]
 
 

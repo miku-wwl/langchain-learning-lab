@@ -20,5 +20,6 @@ python -m venv .venv
 - 05: Streamable HTTP transport
 - 06: LangChain MCPAdapter
 - 07: Local Agent and integration comparison
+- 08: Failures and security boundary
 
 详细解释见 `docs/03-learning-guide.md`。
