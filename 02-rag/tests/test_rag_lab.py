@@ -6,6 +6,7 @@ from langchain_core.documents import Document
 from langchain_core.vectorstores import InMemoryVectorStore
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
 from stage_b_loader import FAQ_PATH, load_documents
+from stage_c_splitter import CHUNK_SIZE, split_documents
 
 def test_document_loader():
     documents = load_documents()

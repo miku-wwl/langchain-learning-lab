@@ -60,3 +60,24 @@ print(documents[0].metadata)
 **Result**：得到 1 个 `Document`；正文包含 refund、delivery、membership、support，metadata 的 `source` 指向 FAQ 文件。
 
 **Why**：后面的 Splitter、Vector Store 和 Retriever 都传递 `Document`，这样正文与来源可以一起流动。当前 `langchain-community` 0.4.2 的 `TextLoader` 能运行，但包会发出 sunset 警告；本 Lab 固定版本，并在报告里解释。
+
+## Stage C — Document → Chunks
+
+**Concept**：太长的 Document 往往把不相关信息混在一起。`RecursiveCharacterTextSplitter` 优先按段落、换行、空格等自然边界切分，生成较短的 Chunk。`chunk_size` 是目标上限，`chunk_overlap` 是相邻块可共享的目标长度。
+
+**Architecture**：`Document(完整 FAQ) → RecursiveCharacterTextSplitter → 8 个 Chunk`。
+
+**Code**（[完整代码](../src/stage_c_splitter.py)）：
+
+```python
+splitter = RecursiveCharacterTextSplitter(
+    chunk_size=180, chunk_overlap=25, add_start_index=True
+)
+chunks = splitter.split_documents(documents)
+```
+
+**Run**：`.venv\Scripts\python.exe src\stage_c_splitter.py`
+
+**Result**：1 个 Document 被切成 8 个 Chunk；每块保留 `source`，并新增 `start_index`。退款到账证据位于 `start_index=327` 的 Chunk。自然段落边界下不保证每对相邻 Chunk 都有 25 字符重叠；另一个固定长度示例实际打印出相同的 15 字符尾部/头部。
+
+**Why**：Document 是加载后的完整资料，Chunk 是用于索引与检索的片段。Chunk 太大增加噪声，太小会切断语义，overlap 只能缓解一部分边界问题。[官方 splitter 指南](https://docs.langchain.com/oss/python/integrations/splitters/recursive_text_splitter)也说明其递归分隔符顺序和 overlap 是目标值。
