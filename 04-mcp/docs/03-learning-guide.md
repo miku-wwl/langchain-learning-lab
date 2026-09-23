@@ -86,3 +86,37 @@ MCP 规范负责能力的描述、发现与调用；模型的 Tool Calling 负�
 **Run**：`.\.venv\Scripts\python.exe -u src\stage_f_mcp_adapter.py`
 
 **Observed Result / Why**：发现 `add`/`get_course_stage`，`add` 是 `BaseTool` 且返回文本内容 5。安装版的 `tool_call_schema` 为 `dict`，教学代码兼容这一实际类型。适配器完成协议到 LangChain Tool 的转换，不替代 Agent Runtime。
+
+## G — 本地 Agent → MCP → Tool → Agent
+
+**Concept**：这是本章 E2E 判定链路；原生 Client/Adapter 的手动调用不能冒充模型驱动的 Agent 调用。
+
+```text
+HumanMessage("37 + 58")
+  → 本地 Qwen3-4B
+  → AIMessage(tool_calls=[add(a=37,b=58)])
+  → Agent Runtime → MCPAdapter → STDIO Client → MCP Server → add()
+  → ToolMessage("95") → 模型 → 最终 AIMessage("95")
+```
+
+**Minimal Code**：`src/model_factory.py` 从 Foundry Local 发现动态 `/v1` 地址及已加载工具模型；`src/stage_g_agent_mcp.py` 检查每一种消息类型、参数与结果。
+
+**Run**：`.\.venv\Scripts\python.exe -u src\stage_g_agent_mcp.py`
+
+**Observed Result / Why**：本地模型产生 `add(37,58)` 的真实结构化调用；MCP-backed ToolMessage 含 95，最终 AIMessage 含 95。Agent 负责选择与循环，MCP 负责跨进程能力接入。
+
+## H — Direct Tool、专用 Adapter、MCP
+
+**Concept**：三种接入方式各有适用场景；MCP 不会总是比专用 Adapter 更好。
+
+| 接入 | 优势 | 代价 |
+| --- | --- | --- |
+| 同进程 Direct Tool | 最少代码，适合小能力 | 发现与跨应用复用需另做 |
+| 专用 Adapter | 可针对一个系统做精确映射 | 每个系统各写一套集成 |
+| MCP Client/Server | 标准化发现、schema、调用与跨进程复用 | 增加协议、Server 生命周期及安全边界 |
+
+**Minimal Code**：`src/stage_h_compare.py` 用同一 `add(2,3)` 演示三条路径。专用 Adapter 中的 Service 是进程内教学替身，不声称验证了真实外部系统。
+
+**Run**：`.\.venv\Scripts\python.exe -u src\stage_h_compare.py`
+
+**Observed Result / Why**：三条路径均得到 5；MCP 路径额外需要先发现 `add`。

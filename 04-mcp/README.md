@@ -19,5 +19,6 @@ python -m venv .venv
 - 04: STDIO transport
 - 05: Streamable HTTP transport
 - 06: LangChain MCPAdapter
+- 07: Local Agent and integration comparison
 
 详细解释见 `docs/03-learning-guide.md`。
