@@ -60,3 +60,29 @@ reply = create_local_model().invoke(prompt)
 **Result**：模板产生 System/Human 两条消息；本地模型返回非空内容。测试还验证缺少 `language` 时会报缺少模板变量。Qwen3-4b 的短输出上限可能只显示其 `<think>` 段，因此本阶段以模板展开和真实调用为主要证据。
 
 **Why**：Prompt 与 Model 是两步。看清模板展开后的 Messages，才能判断错误来自输入、提示词，还是模型本身。
+
+## Stage C — `@tool`、schema 与 `bind_tools`
+
+**Concept**：`@tool` 把 Python 函数及参数类型转成工具 schema。`bind_tools` 把这个 schema 提供给模型，模型可生成 `tool_calls`；此时 Python 工具还没有被模型自动执行。
+
+**Architecture**：`User → Model(bind_tools) → AIMessage.tool_calls`，停在工具请求处。
+
+**Code**（[工具](../src/tools.py)、[完整 Stage](../src/stage_c_tools.py)）：
+
+```python
+@tool
+def add(a: int, b: int) -> int:
+    """Add two integers and return the sum."""
+    return a + b
+
+reply = create_local_model().bind_tools([add]).invoke(
+    "Use the add tool to calculate 17 + 25. Return the tool result."
+)
+print(reply.tool_calls)
+```
+
+**Run**：`.venv\Scripts\python.exe src\stage_c_tools.py`
+
+**Result**：直接调用工具返回 `42`；Qwen 的 `tool_calls` 包含 `name='add'`、`args={'a': 17, 'b': 25}`。模型原始文本也出现 `<tool_call>`，程序以解析后的 `tool_calls` 为准。
+
+**Why**：`bind_tools != Agent`。这一阶段只证明模型会请求工具；下一阶段才执行它。
