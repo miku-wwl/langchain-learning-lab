@@ -98,3 +98,19 @@ HumanMessage → AIMessage(tool_calls=[add]) → add(17,25)
 **Run**：`python src/stage_g_context.py`。
 
 **Observed Result / Why**：Trim 从 8 条减到 5 条，含旧 `AIMessage(tool_calls)` 与配对的 `ToolMessage`；模型回复后共 6 条。摘要把 Python generators 和短例子的偏好放进一条摘要，同时保留最近提问。若只留工具调用而丢结果，历史不合法，因此裁剪前必须检查配对。
+
+## H — Human-in-the-Loop
+
+**Concept / Architecture**：`HumanInTheLoopMiddleware` 在高风险工具真正执行前暂停。`read_data` 不触发审批；`execute_sql` 只模拟 SQL，不连数据库。
+
+```text
+模型提议 execute_sql → interrupt → 人类决策
+                                     ├─ approve → 模拟工具执行
+                                     └─ reject  → 错误 ToolMessage，零执行
+```
+
+**Minimal Code**：`src/stage_h_hitl.py` 使用 `InMemorySaver`，`invoke(..., version="v2")` 读取 `result.interrupts`，再 `Command(resume={"decisions": [...]})`。批准和拒绝分别使用独立线程。
+
+**Run**：`python src/stage_h_hitl.py`。
+
+**Observed Result / Why**：安全工具直接执行；SQL 在 interrupt 前没有执行。批准后 `SIMULATED_SQL_CALLS` 增加一次，拒绝后不增加，Agent 收到拒绝 `ToolMessage`。这是审批门控实验，不验证数据库能力。

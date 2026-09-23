@@ -20,5 +20,6 @@ py -3.13 -m venv .venv
 - E: memory and thread isolation（`src/stage_e_memory.py`）
 - F: State and ToolRuntime（`src/stage_f_state_runtime.py`）
 - G: trim and summarization（`src/stage_g_context.py`）
+- H: human approval gate（`src/stage_h_hitl.py`）
 
 学习说明见 `docs/03-learning-guide.md`。
