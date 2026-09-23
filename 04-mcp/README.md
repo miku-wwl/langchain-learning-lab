@@ -17,5 +17,6 @@ python -m venv .venv
 - 02: MCP Server primitives
 - 03: Raw Client discovery and call
 - 04: STDIO transport
+- 05: Streamable HTTP transport
 
 详细解释见 `docs/03-learning-guide.md`。
