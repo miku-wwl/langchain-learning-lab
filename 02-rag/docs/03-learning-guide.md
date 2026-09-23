@@ -81,3 +81,28 @@ chunks = splitter.split_documents(documents)
 **Result**：1 个 Document 被切成 8 个 Chunk；每块保留 `source`，并新增 `start_index`。退款到账证据位于 `start_index=327` 的 Chunk。自然段落边界下不保证每对相邻 Chunk 都有 25 字符重叠；另一个固定长度示例实际打印出相同的 15 字符尾部/头部。
 
 **Why**：Document 是加载后的完整资料，Chunk 是用于索引与检索的片段。Chunk 太大增加噪声，太小会切断语义，overlap 只能缓解一部分边界问题。[官方 splitter 指南](https://docs.langchain.com/oss/python/integrations/splitters/recursive_text_splitter)也说明其递归分隔符顺序和 overlap 是目标值。
+
+## Stage D — Text → Embedding Vector
+
+**Concept**：Embedding 模型把文本映射到固定长度的数值向量。向量不是摘要或答案；向量之间的距离可帮助找到语义相近的文本。LLM 负责生成回答，Embedding 模型负责表示文本以供搜索。
+
+**Architecture**：`refund question / refund policy / weather sentence → local FastEmbed → 384D vectors → cosine similarity`。
+
+**Code**（[工厂](../src/embedding_factory.py)、[完整 Stage](../src/stage_d_embedding.py)）：
+
+```python
+embeddings = create_local_embeddings()
+query = embeddings.embed_query("How can I get a refund?")
+refund, weather = embeddings.embed_documents([
+    "What is the refund policy?",
+    "The weather is sunny today.",
+])
+related = cosine_similarity(query, refund)
+unrelated = cosine_similarity(query, weather)
+```
+
+**Run**：`.venv\Scripts\python.exe src\stage_d_embedding.py`
+
+**Result**：本地 `BAAI/bge-small-en-v1.5` 产生 384 维向量；本次运行 `similarity(refund, refund)=0.8687`，`similarity(refund, weather)=0.4193`。首次获取的模型缓存约 64 MB；关闭 Hugging Face 网络访问后重跑仍成功。
+
+**Why**：这证明程序使用真实语义向量，且相关文本比无关文本接近。具体分数随模型而变，只应测试排序与检索行为。索引和查询必须用兼容的 Embedding 空间。
