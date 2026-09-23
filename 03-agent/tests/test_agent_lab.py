@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from stage_d_tool_errors import divide, on_tool_error  # noqa: E402
 from stage_f_state_runtime import CustomState, get_user_info  # noqa: E402
 from stage_g_context import keep_recent_valid_history  # noqa: E402
+from stage_h_hitl import HITL_POLICY, execute_sql  # noqa: E402
 from tools import add, echo_direct, get_current_date  # noqa: E402
 
 def test_tool_function_schema_and_execution() -> None:
@@ -76,3 +77,9 @@ def test_trim_keeps_valid_tool_pair() -> None:
     assert any(isinstance(msg, ToolMessage) and msg.tool_call_id == "pair" for msg in kept)
     with pytest.raises(ValueError):
         keep_recent_valid_history([*messages[:-2], HumanMessage(content="now")])
+
+
+def test_hitl_policy_and_simulated_execution() -> None:
+    assert HITL_POLICY["read_data"] is False
+    assert HITL_POLICY["execute_sql"]["allowed_decisions"] == ["approve", "reject"]
+    assert execute_sql.invoke({"query": "SELECT 1"}) == "SIMULATED SQL: SELECT 1"

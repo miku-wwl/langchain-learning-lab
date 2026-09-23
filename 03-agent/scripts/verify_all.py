@@ -13,6 +13,7 @@ STAGES = [
     ('stage_e_memory.py', ['THREAD_MEMORY_ISOLATION=PASS']),
     ('stage_f_state_runtime.py', ['STATE_TOOL_RUNTIME=PASS']),
     ('stage_g_context.py', ['TRIM_VALID_TOOL_PAIR=PASS', 'SUMMARIZATION_MIDDLEWARE=PASS']),
+    ('stage_h_hitl.py', ['HITL_SAFE_TOOL_NO_APPROVAL=PASS', 'HITL_APPROVE=PASS', 'HITL_REJECT=PASS']),
 ]
 
 
